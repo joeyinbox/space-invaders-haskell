@@ -20,7 +20,8 @@ make
 Credits
 -------------
 - "Space Invaders" mentions, gameplay and graphics are trademarks of Taito Corporation.
-- MAKEFILE and MainWrapper for Mac OSX courtesy of the [SDL package source directory](http://mirror.seize.it/hsSDL/hssdl/Examples/MacOSX/) 
+- MAKEFILE and MainWrapper for Mac OSX courtesy of the [SDL package source directory](http://mirror.seize.it/hsSDL/hssdl/Examples/MacOSX/).
+- Inspired by [snkkid's port](https://github.com/snkkid/LazyFooHaskell) of LazyFoo's SDL tutorials to Haskell.
 
 Disclaimer
 -------------
