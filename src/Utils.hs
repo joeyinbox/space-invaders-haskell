@@ -20,13 +20,16 @@ merge []     ys     = ys
 merge (x:xs) (y:ys) = x : y : merge xs ys
 
 -- Repeat a function or an action n times
-repeatNTimes 0 _ = return ()
-repeatNTimes n action = do
+repeatAction 0 _ = return ()
+repeatAction n action = do
     action
-    repeatNTimes (n-1) action
+    repeatAction (n-1) action
 
 -- Sleep for 500ms (~2fps)
 tick :: IO ()
 tick = do t <- getCurrentTime
           let secs = round (realToFrac $ utctDayTime t) `rem` 100 -- 100
           threadDelay $ 5000 * (100 - secs) -- 1000 100
+
+-- Duplicate each element of a list
+duplicate = (>>= replicate 2)

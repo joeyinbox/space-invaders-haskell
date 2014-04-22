@@ -1,31 +1,57 @@
 module Game where
 
 import Data.Map
+import Dataset
 import Attacker
 import Bullet
 import Utils
-import Gui
 
 
 
--- Find the attackers' boundaries (the most on the left, the right and the bottom)
+--3
+--take 3*11 list                              --> list des 33 premiers
+--flip (take 3*11 list)                       --> list des 33 premiers inversés
+--take 11 (flip (take 3*11 list))             --> list de 23 à 33 inversés
+--flip (take 11 (flip (take 3*11 list)))
+--
+--take 11 list
+
+
+
+
+
+
+-- Return the general left boundary of all attackers
 getLeftBoundary [] = error "The list is empty"
 getLeftBoundary (x:xs) = go (fst (snd x)) xs
-  where
-    go m [] = m 
-    go m (y:ys) = if m < (fst (snd y)) then go m ys else go (fst (snd y)) ys
+    where
+        go m [] = m 
+        go m (y:ys) = if m < (fst (snd y)) then go m ys else go (fst (snd y)) ys
+
+-- Return the left boundary for a specified line
+getLeftBoundaryPerLine [] _ = error "The list is empty"
+getLeftBoundaryPerLine (x:xs) line = go (fst (snd x)) (reverse (take 11 (reverse (take (line*11) xs))))
+    where
+        go m [] = m 
+        go m (y:ys) = if m < (fst (snd y)) then go m ys else go (fst (snd y)) ys
     
 getRightBoundary [] = error "The list is empty"
 getRightBoundary (x:xs) = go (fst (snd x)) xs
-  where
-    go m [] = m 
-    go m (y:ys) = if m > (fst (snd y)) then go m ys else go (fst (snd y)) ys
+    where
+        go m [] = m 
+        go m (y:ys) = if m > (fst (snd y)) then go m ys else go (fst (snd y)) ys
+
+getRightBoundaryPerLine [] _ = error "The list is empty"
+getRightBoundaryPerLine (x:xs) line = go (fst (snd x)) (reverse (take 11 (reverse (take (line*11) xs))))
+    where
+        go m [] = m 
+        go m (y:ys) = if m > (fst (snd y)) then go m ys else go (fst (snd y)) ys
 
 getDownBoundary [] = error "The list is empty"
 getDownBoundary (x:xs) = go (snd (snd x)) xs
-  where
-    go m [] = m 
-    go m (y:ys) = if m > (snd (snd y)) then go m ys else go (snd (snd y)) ys
+    where
+        go m [] = m 
+        go m (y:ys) = if m > (snd (snd y)) then go m ys else go (snd (snd y)) ys
 
 -- Detect if attackers need to turn
 detectTurn :: [(Int, Position)] -> Int -> Bool
@@ -43,79 +69,46 @@ detectGameOver positionList = do
         then True
     else False
 
--- Need to gather all informations within a single tuple to allow recursion calls
--- 1.  list of attacker identifiers
--- 2.  list of attacker types
--- 3.  list of attacker positions
--- 4.  list of attacker state (alive or not)
--- 5.  direction of the attackers
--- 6.  list of bullets
-type GameDataType = ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int, [Bullet])
-
--- Allow to retrieve informations within GameDataType
--- Get the list of id
-getIdList :: GameDataType -> [Int]
-getIdList (a,_,_,_,_,_) = a
-
--- Get the list of attacker types
-getAttackerTypeList :: GameDataType -> [(Int, AttackerType)]
-getAttackerTypeList (_,a,_,_,_,_) = a
-
--- Get the list of attacker position
-getAttackerPositionList :: GameDataType -> [(Int, Position)]
-getAttackerPositionList (_,_,a,_,_,_) = a
-
--- Get the list indicating if the attackers are still alive
-getAttackerAliveList :: GameDataType -> [(Int, Bool)]
-getAttackerAliveList (_,_,_,a,_,_) = a
-
--- Get the list indicating if the attackers are still alive
-getAttackerDirection :: GameDataType -> Int
-getAttackerDirection (_,_,_,_,a,_) = a
-
--- Get the list of bullets
-getBulletList :: GameDataType -> [Bullet]
-getBulletList (_,_,_,_,_,a) = a
-
-
 
 
 -- Function called at each tick every 100ms (~10fps)
 loop xxs@(x:xs) gameData = do
     -- Update informations
-    let newGameData = (getIdList gameData, 
+    let newGameData =  -- Ids
+                       (getIdList gameData, 
+                       -- Types
                        getAttackerTypeList gameData, 
-                       moveDown (moveSide (getAttackerPositionList gameData) (getAttackerDirection gameData)) (if detectTurn (getAttackerPositionList gameData) (getAttackerDirection gameData) then 1 else 0), 
+                       -- Positions
+                       moveDown                                             -- Apply an eventuel shift over attackers' Y position
+                         (moveSide                                             -- Apply an eventuel shift over attackers' X position
+                           (getAttackerPositionList gameData) 
+                           (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
+                         ) (if detectTurn                                    
+                             (getAliveAttackerPositionList                     -- Return only the positions of the attackers which are still alive
+                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
+                             ) 
+                             (getAttackerDirection gameData) then 1 else 0    -- Determine the value of the Y shift (either 0 or 1) according to the result of the previous method
+                            ), 
+                       -- Alives
                        getAttackerAliveList gameData, 
-                       if detectTurn (getAttackerPositionList gameData) (getAttackerDirection gameData) then (getAttackerDirection gameData)*(-1) else (getAttackerDirection gameData), 
+                       -- Direction
+                       if detectTurn                                         -- Change the direction of attackers if a turn is detected                                  
+                           (getAliveAttackerPositionList                       -- Return only the positions of the attackers which are still alive
+                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
+                            )  
+                           (getAttackerDirection gameData) 
+                         then (getAttackerDirection gameData)*(-1)            -- Invert it or..
+                         else (getAttackerDirection gameData),                -- Keep the same
+                       -- Bullets
                        getBulletList gameData)
     
+    -- Clear the screen
     clearScreen
     
     -- Display informations
-    
-    --let id = (mod x 55)+1
-    let id = 1
-    print (getLeftBoundary (getAttackerPositionList newGameData))
-    print (getRightBoundary (getAttackerPositionList newGameData))
-    print (getDownBoundary (getAttackerPositionList newGameData))
-    print (getAttackerWorth (fromList (getAttackerTypeList newGameData) ! id))
-    print (fst (fromList (getAttackerPositionList newGameData) ! id))
-    print (snd (fromList (getAttackerPositionList newGameData) ! id))
-    
-    putStrLn (fst (getAttackerGraphic (fromList (getAttackerTypeList newGameData) ! id)))
-    putStrLn (snd (getAttackerGraphic (fromList (getAttackerTypeList newGameData) ! id)))
-    
-    if (fromList (getAttackerAliveList newGameData) ! id) then
-        putStrLn "Still alive"
-    else
-        putStrLn "Destroyed"
-    
-    if attackerTypeEq Octopus (fromList (getAttackerTypeList newGameData) ! id) then
-        putStrLn "It is an octopus!"
-    else
-        putStrLn "Not an octopus.."
-    
+    display newGameData
     
     -- Sleep for 500ms (~2fps)
     tick
@@ -124,3 +117,106 @@ loop xxs@(x:xs) gameData = do
     if not (detectGameOver (getAttackerPositionList newGameData))
         then loop xs newGameData
     else putStrLn "Game Over"
+
+
+
+-- Clear the screen
+clearScreen = do
+    repeatAction 100 (putStrLn "")
+
+
+-- Display the whole game
+display gameData = do
+    -- Display the statistics
+    putStrLn "------------------------------------------------------------------------------------------------------"
+    putStrLn "| Level: X                                    Score: X                                      Lives: X |"
+    -- Fill the gap between the top and the attackers
+    repeatAction ((snd (fromList (getAttackerPositionList gameData) ! 1))-1) (putStrLn "|                                                                                                    |")
+    
+    -- Display all the attackers
+    displayAllAttacker gameData ((concatMap (replicate 2) [1..5]) `zip` (cycle [1,2]))
+    
+    -- Fill the gap between the bottom and the attackers
+    repeatAction (33-(snd (fromList (getAttackerPositionList gameData) ! 55))) (putStrLn "|                                                                                                    |")
+    
+    
+    putStrLn "------------------------------------------------------------------------------------------------------"
+    
+    
+    --
+    --let id = 23
+    --print (getLeftBoundary (getAttackerPositionList gameData))
+    --print (getRightBoundary (getAttackerPositionList gameData))
+    --print (getDownBoundary (getAttackerPositionList gameData))
+    --print (getAttackerWorth (fromList (getAttackerTypeList gameData) ! id))
+    --print (fst (fromList (getAttackerPositionList gameData) ! id))
+    --print (snd (fromList (getAttackerPositionList gameData) ! id))
+    --
+    --if (fromList (getAttackerAliveList gameData) ! id) then
+    --    putStrLn "Still alive"
+    --else
+    --    putStrLn "Destroyed"
+    --
+    --if attackerTypeEq Crab (fromList (getAttackerTypeList gameData) ! id) then
+    --    putStrLn "It is a crab!"
+    --else
+    --    putStrLn "Not a crab.."
+    
+
+
+-- Display recursively a whole line of alive attackers
+displayAttackerLine gameData [] _ = putStr ""
+displayAttackerLine gameData (x:xs) line = do
+    -- Display the attacker if it is still alive
+    let id = (((fst line)-1)*11)+x
+    
+    if (fromList (getAttackerAliveList gameData) ! id) then
+        if snd line == 1
+            then putStr (fst (getAttackerGraphic (fromList (getAttackerTypeList gameData) ! id)))
+        else if snd line == 2
+            then putStr (snd (getAttackerGraphic (fromList (getAttackerTypeList gameData) ! id)))
+        else putStr "    "
+    else
+        putStr "    "
+    
+    -- Display a margin if it is not the last attacker to process
+    if length xs > 0 
+        then putStr "   "
+    else putStr ""
+    
+    -- Loop
+    displayAttackerLine gameData xs line
+
+
+-- Display all attackers, margins and the board borders
+displayAllAttacker gameData []     = putStr ""
+displayAllAttacker gameData (x:xs) = do
+    -- Display the left border
+    putStr "|"
+    -- Display the space between the left side of a line and the first attacker alive
+    repeatAction (getLeftBoundaryPerLine (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (fst x)) (putStr " ")
+    -- Display attackers for this line
+    displayAttackerLine gameData [1..11] x
+    -- Display the space between the right side of a line and the last attacker alive
+    repeatAction (96-(getRightBoundaryPerLine (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (fst x))) (putStr " ")
+    -- Display the right border
+    putStrLn "|"
+    
+    if snd x == 2
+        then putStrLn "|                                                                                                    |"
+    else putStr ""
+    
+    -- Loop
+    displayAllAttacker gameData xs
+    
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
