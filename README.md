@@ -17,3 +17,7 @@ ghc -o SpaceInvaders src/*.hs
 Credits
 -------------
 - "Space Invaders" mentions, gameplay and graphics are trademarks of Taito Corporation.
+
+Disclaimer
+-------------
+This is my first attempt at coding in Haskell. There might be better and more clever way to do it.
