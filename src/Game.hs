@@ -79,8 +79,8 @@ loop xxs@(x:xs) gameData = do
                        -- Types
                        getAttackerTypeList gameData, 
                        -- Positions
-                       moveDown                                             -- Apply an eventuel shift over attackers' Y position
-                         (moveSide                                             -- Apply an eventuel shift over attackers' X position
+                       moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
+                         (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
                            (getAttackerPositionList gameData) 
                            (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
                          ) (if detectTurn                                    

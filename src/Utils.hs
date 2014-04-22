@@ -2,6 +2,18 @@ module Utils where
 
 import Control.Concurrent (threadDelay)
 import Data.Time.Clock
+import Control.Monad
+import Graphics.UI.SDL
+import Graphics.UI.SDL.Image
+
+loadImage :: String -> IO Surface
+loadImage filename = load filename >>= displayFormat
+
+applySurface :: Int -> Int -> Surface -> Surface -> IO Bool
+applySurface x y src dest = blitSurface src Nothing dest offset
+    where offset = Just Rect {rectX=x, rectY=y, rectW=0, rectH=0}
+
+
 
 -- Define Position type (x, y)
 type Position = (Int, Int)

@@ -81,9 +81,9 @@ resetAttackerDirection :: Int -> Int
 resetAttackerDirection _ = 1
 
 -- Shift all X positions by a given number
-moveSide :: [(Int, Position)] -> Int -> [(Int, Position)]
-moveSide xs z = Prelude.map (\(x,y) -> (x, (fst y+z, snd y))) xs
+moveAttackerSide :: [(Int, Position)] -> Int -> [(Int, Position)]
+moveAttackerSide xs z = Prelude.map (\(x,y) -> (x, (fst y+z, snd y))) xs
 
 -- Shift all Y positions by a given number
-moveDown :: [(Int, Position)] -> Int -> [(Int, Position)]
-moveDown xs z = Prelude.map (\(x,y) -> (x, (fst y, snd y+z))) xs
+moveAttackerDown :: [(Int, Position)] -> Int -> [(Int, Position)]
+moveAttackerDown xs z = Prelude.map (\(x,y) -> (x, (fst y, snd y+z))) xs
