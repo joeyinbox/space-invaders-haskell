@@ -60,9 +60,6 @@ resetAttackerAliveList _ = attackerIdList `zip` (cycle [True])
 -- (re-)Initialise the list of attackers position
 resetAttackerPositionList :: [(Int, Position)] -> [(Int, Position)]
 resetAttackerPositionList _ = do
-    -- Attacker positions start at x:7 y:14
-    -- There will be 7 characters between 2 columns (of attacker X positions) including their width of 4
-    -- There will be 3 characters betwwen 2 rows (of attacker Y positions) including their height of 2
     -- Horizontal positions
     let x = (Prelude.map (+90) (Prelude.map (*60) [1..11])) ++ (Prelude.map (+85) (take 44 (cycle (Prelude.map (*60) [1..11]))))
 

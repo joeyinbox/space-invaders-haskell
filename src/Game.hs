@@ -59,51 +59,51 @@ detectGameOver positionList = do
 
 
 -- Function called at each tick every 100ms (~10fps)
-loopOld xxs@(x:xs) gameData = do
-    -- Update informations
-    let newGameData =  -- Ids
-                       (getIdList gameData, 
-                       -- Types
-                       getAttackerTypeList gameData, 
-                       -- Positions
-                       moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
-                         (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
-                           (getAttackerPositionList gameData) 
-                           (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
-                         ) (if detectTurn                                    
-                             (getAliveAttackerPositionList                     -- Return only the positions of the attackers which are still alive
-                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
-                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
-                             ) 
-                             (getAttackerDirection gameData) then 1 else 0    -- Determine the value of the Y shift (either 0 or 1) according to the result of the previous method
-                            ), 
-                       -- Alives
-                       getAttackerAliveList gameData, 
-                       -- Direction
-                       if detectTurn                                         -- Change the direction of attackers if a turn is detected                                  
-                           (getAliveAttackerPositionList                       -- Return only the positions of the attackers which are still alive
-                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
-                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
-                            )  
-                           (getAttackerDirection gameData) 
-                         then (getAttackerDirection gameData)*(-1)            -- Invert it or..
-                         else (getAttackerDirection gameData),                -- Keep the same
-                       -- Bullets
-                       getBulletList gameData)
-    
-    -- Clear the screen
-    clearScreen
-    
-    -- Display informations
-    display newGameData
-    
-    -- Sleep for 500ms (~2fps)
-    tick
-    
-    -- Loop again if the game is not over
-    if not (detectGameOver (getAttackerPositionList newGameData))
-        then loopOld xs newGameData
-    else putStrLn "Game Over"
+--loopOld xxs@(x:xs) gameData = do
+--    -- Update informations
+--    let newGameData =  -- Ids
+--                       (getAttackerIdList gameData, 
+--                       -- Types
+--                       getAttackerTypeList gameData, 
+--                       -- Positions
+--                       moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
+--                         (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
+--                           (getAttackerPositionList gameData) 
+--                           (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
+--                         ) (if detectTurn                                    
+--                             (getAliveAttackerPositionList                     -- Return only the positions of the attackers which are still alive
+--                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+--                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
+--                             ) 
+--                             (getAttackerDirection gameData) then 1 else 0    -- Determine the value of the Y shift (either 0 or 1) according to the result of the previous method
+--                            ), 
+--                       -- Alives
+--                       getAttackerAliveList gameData, 
+--                       -- Direction
+--                       if detectTurn                                         -- Change the direction of attackers if a turn is detected                                  
+--                           (getAliveAttackerPositionList                       -- Return only the positions of the attackers which are still alive
+--                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+--                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
+--                            )  
+--                           (getAttackerDirection gameData) 
+--                         then (getAttackerDirection gameData)*(-1)            -- Invert it or..
+--                         else (getAttackerDirection gameData),                -- Keep the same
+--                       -- Bullets
+--                       getBulletList gameData)
+--    
+--    -- Clear the screen
+--    clearScreen
+--    
+--    -- Display informations
+--    display newGameData
+--    
+--    -- Sleep for 500ms (~2fps)
+--    tick
+--    
+--    -- Loop again if the game is not over
+--    if not (detectGameOver (getAttackerPositionList newGameData))
+--        then loopOld xs newGameData
+--    else putStrLn "Game Over"
 
 
 

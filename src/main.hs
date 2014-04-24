@@ -8,7 +8,9 @@ import Graphics.UI.SDL.TTF.Management
 import Graphics.UI.SDL.TTF.Render
 import Dataset
 import Attacker
+import Player
 import Bullet
+import Bunker
 import Game
 import Utils
 
@@ -40,7 +42,6 @@ main = withInit [InitEverything] $ do
             spaceship           <- loadImage "../res/img/spaceship.png"
             player              <- loadImage "../res/img/player.png"
             bullet              <- loadImage "../res/img/bullet.png"
-                               
             bunkerTopLeft0      <- loadImage "../res/img/bunker/top-left-0.png"
             bunkerTopLeft1      <- loadImage "../res/img/bunker/top-left-1.png"
             bunkerTopLeft2      <- loadImage "../res/img/bunker/top-left-2.png"
@@ -61,10 +62,12 @@ main = withInit [InitEverything] $ do
             bunkerPlain1        <- loadImage "../res/img/bunker/plain-1.png"
             bunkerPlain2        <- loadImage "../res/img/bunker/plain-2.png"
             bunkerPlain3        <- loadImage "../res/img/bunker/plain-3.png"
+            bunkerDestroyed     <- loadImage "../res/img/bunker/destroyed.png"
+            baseline            <- loadImage "../res/img/baseline.png"
             
             
             -- Gather all elements together to pass them as parameters
-            let resourceList = (background, crab, octopus, squid, spaceship, player, bullet, (bunkerTopLeft0, bunkerTopLeft1, bunkerTopLeft2, bunkerTopLeft3, bunkerTopRight0, bunkerTopRight1, bunkerTopRight2, bunkerTopRight3, bunkerCenterLeft0, bunkerCenterLeft1, bunkerCenterLeft2, bunkerCenterLeft3, bunkerCenterRight0, bunkerCenterRight1, bunkerCenterRight2, bunkerCenterRight3, bunkerPlain0, bunkerPlain1, bunkerPlain2, bunkerPlain3))
+            let resourceList = (background, crab, octopus, squid, spaceship, player, bullet, (bunkerTopLeft0, bunkerTopLeft1, bunkerTopLeft2, bunkerTopLeft3, bunkerTopRight0, bunkerTopRight1, bunkerTopRight2, bunkerTopRight3, bunkerCenterLeft0, bunkerCenterLeft1, bunkerCenterLeft2, bunkerCenterLeft3, bunkerCenterRight0, bunkerCenterRight1, bunkerCenterRight2, bunkerCenterRight3, bunkerPlain0, bunkerPlain1, bunkerPlain2, bunkerPlain3, bunkerDestroyed), baseline)
             let appData = (MAIN, screen, (fontTitle, fontMenu, fontStatus), fontColor, resourceList)
             
             -- Display the main screen
@@ -76,7 +79,8 @@ main = withInit [InitEverything] $ do
     
     where
         -- Declare and initialise all lists of variables needed within the same element to be able to pass it recursively
-        gameData = (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0, [])
+        --gameData = (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0, [])
+        gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0), [], (bunkerIdList, resetBunkerTypeList [], resetBunkerPositionList [], resetBunkerStateList []))
         
         -- The actual loop function
         loop gameData appData = do
@@ -192,16 +196,20 @@ displayInGameScreen gameData appData = do
 	
 	
 	-- Display attackers
-    displayAttacker gameData appData (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))
+    displayAttacker (getAttackerTypeList gameData) appData (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))
     
     -- Display an eventual spaceship
     
     -- Draw all bunkers
+    displayBunker (getBunkerTypeList gameData) (getBunkerStateList gameData) appData (getBunkerPositionList gameData)
+    
     -- Draw the bullets
+    
     -- Draw the player
+    applySurface (fst (getPlayerPosition gameData)) (755-(surfaceGetHeight (getPlayerImg appData))) (getPlayerImg appData) (getScreen appData)
     
     -- Draw the baseline
-    
+    applySurface 0 765 (getBaselineImg appData) (getScreen appData)
 	
 	-- Refresh the screen to show all elements
     Graphics.UI.SDL.flip (getScreen appData)
@@ -210,19 +218,81 @@ displayInGameScreen gameData appData = do
 
 
 -- Display all attackers
-displayAttacker gameData appData []     = putStr ""
-displayAttacker gameData appData (x:xs) = do
+displayAttacker attackerTypeList appData []     = putStr ""
+displayAttacker attackerTypeList appData (x:xs) = do
     -- Display by type
-    if attackerTypeEq (fromList (getAttackerTypeList gameData) ! (fst x)) Crab
+    if attackerTypeEq (fromList attackerTypeList ! (fst x)) Crab
         then applySurface (fst (snd x)) (snd (snd x)) (getCrabImg appData) (getScreen appData)
-    else if attackerTypeEq (fromList (getAttackerTypeList gameData) ! (fst x)) Octopus
+    else if attackerTypeEq (fromList attackerTypeList ! (fst x)) Octopus
         then applySurface (fst (snd x)) (snd (snd x)) (getOctopusImg appData) (getScreen appData)
-    else if attackerTypeEq (fromList (getAttackerTypeList gameData) ! (fst x)) Squid
+    else if attackerTypeEq (fromList attackerTypeList ! (fst x)) Squid
         then applySurface (fst (snd x)) (snd (snd x)) (getSquidImg appData) (getScreen appData)
     else applySurface (fst (snd x)) (snd (snd x)) (getSpaceshipImg appData) (getScreen appData)
     
     -- Loop
-    displayAttacker gameData appData xs
+    displayAttacker attackerTypeList appData xs
+
+
+-- Display all bunkers
+displayBunker bunkerTypeList bunkerStateList appData []     = putStr ""
+displayBunker bunkerTypeList bunkerStateList appData (x:xs) = do
+    -- Display by type
+    if bunkerTypeEq (fromList bunkerTypeList ! (fst x)) TopLeft
+        then if bunkerStateEq (fromList bunkerStateList ! (fst x)) Initial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopLeft0Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Minor
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopLeft1Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Partial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopLeft2Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Major
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopLeft3Img appData) (getScreen appData)
+             else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
+    else if bunkerTypeEq (fromList bunkerTypeList ! (fst x)) TopRight
+        then if bunkerStateEq (fromList bunkerStateList ! (fst x)) Initial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopRight0Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Minor
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopRight1Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Partial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopRight2Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Major
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerTopRight3Img appData) (getScreen appData)
+             else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
+    else if bunkerTypeEq (fromList bunkerTypeList ! (fst x)) CenterLeft
+        then if bunkerStateEq (fromList bunkerStateList ! (fst x)) Initial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterLeft0Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Minor
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterLeft1Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Partial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterLeft2Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Major
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterLeft3Img appData) (getScreen appData)
+             else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
+    else if bunkerTypeEq (fromList bunkerTypeList ! (fst x)) CenterRight
+        then if bunkerStateEq (fromList bunkerStateList ! (fst x)) Initial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterRight0Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Minor
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterRight1Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Partial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterRight2Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Major
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerCenterRight3Img appData) (getScreen appData)
+             else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
+    else if bunkerTypeEq (fromList bunkerTypeList ! (fst x)) Plain
+        then if bunkerStateEq (fromList bunkerStateList ! (fst x)) Initial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerPlain0Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Minor
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerPlain1Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Partial
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerPlain2Img appData) (getScreen appData)
+             else if bunkerStateEq (fromList bunkerStateList ! (fst x)) Major
+                 then applySurface (fst (snd x)) (snd (snd x)) (getBunkerPlain3Img appData) (getScreen appData)
+             else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
+    else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
+    
+    
+    
+    -- Loop
+    displayBunker bunkerTypeList bunkerStateList appData xs
 
 
 

@@ -1,0 +1,51 @@
+module Bunker where
+
+import Utils
+
+-- This list store the identifier of all bunker parts
+bunkerIdList = [1..48]
+
+-- Define Bunker types
+data BunkerType = TopLeft | TopRight | CenterLeft | CenterRight | Plain
+
+-- Define Bunker type checking
+bunkerTypeEq :: BunkerType -> BunkerType -> Bool
+bunkerTypeEq TopLeft     TopLeft     = True
+bunkerTypeEq TopRight    TopRight    = True
+bunkerTypeEq CenterLeft  CenterLeft  = True
+bunkerTypeEq CenterRight CenterRight = True
+bunkerTypeEq Plain       Plain       = True
+bunkerTypeEq _           _           = False
+
+-- Define Bunker state
+data BunkerState = Initial | Minor | Partial | Major | Destroyed
+
+-- Define Bunker state checking
+bunkerStateEq :: BunkerState -> BunkerState -> Bool
+bunkerStateEq Initial   Initial   = True
+bunkerStateEq Minor     Minor     = True
+bunkerStateEq Partial   Partial   = True
+bunkerStateEq Major     Major     = True
+bunkerStateEq Destroyed Destroyed = True
+bunkerStateEq _         _         = False
+
+
+-- (re-)Initialise the list of bunker types
+resetBunkerTypeList :: [(Int, BunkerType)] -> [(Int, BunkerType)]
+resetBunkerTypeList _ = bunkerIdList `zip` (take 48 (cycle ([TopLeft, Plain, Plain, TopRight, Plain, Plain, Plain, Plain, Plain, CenterLeft, CenterRight, Plain])))
+
+-- (re-)Initialise the list of bunker positions
+resetBunkerPositionList :: [(Int, Position)] -> [(Int, Position)]
+resetBunkerPositionList _ = do
+    -- Horizontal positions
+    let x =  (take 12 (cycle ([170, 194, 218, 242]))) ++ (take 12 (cycle ([366, 390, 414, 438]))) ++ (take 12 (cycle ([562, 586, 610, 634]))) ++ (take 12 (cycle ([758, 782, 806, 830])))
+
+    -- Vertical positions
+    let y = (take 48 (cycle ([600,600,600,600,624,624,624,624,648,648,648,648])))
+
+    -- Combine both x and y then map it to all identifiers
+    bunkerIdList `zip` (addPosition x y)
+
+-- (re-)Initialise the list of bunker states
+resetBunkerStateList :: [(Int, BunkerState)] -> [(Int, BunkerState)]
+resetBunkerStateList _ = bunkerIdList `zip` (cycle [Initial])
