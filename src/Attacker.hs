@@ -64,14 +64,10 @@ resetAttackerPositionList _ = do
     -- There will be 7 characters between 2 columns (of attacker X positions) including their width of 4
     -- There will be 3 characters betwwen 2 rows (of attacker Y positions) including their height of 2
     -- Horizontal positions
-    let x = take 55 (cycle (Prelude.map (*7) [1..11]))
+    let x = (Prelude.map (+90) (Prelude.map (*60) [1..11])) ++ (Prelude.map (+85) (take 44 (cycle (Prelude.map (*60) [1..11]))))
 
     -- Vertical positions
-    let y = [14,14,14,14,14,14,14,14,14,14,14,
-             17,17,17,17,17,17,17,17,17,17,17,
-             20,20,20,20,20,20,20,20,20,20,20,
-             23,23,23,23,23,23,23,23,23,23,23,
-             26,26,26,26,26,26,26,26,26,26,26]
+    let y = (take 11 [160,160..]) ++ (take 11 [220,220..]) ++ (take 11 [280,280..]) ++ (take 11 [340,340..]) ++ (take 11 [400,400..])
 
     -- Combine both x and y then map it to all identifiers
     attackerIdList `zip` (addPosition x y)

@@ -8,19 +8,6 @@ import Utils
 
 
 
---3
---take 3*11 list                              --> list des 33 premiers
---flip (take 3*11 list)                       --> list des 33 premiers inversés
---take 11 (flip (take 3*11 list))             --> list de 23 à 33 inversés
---flip (take 11 (flip (take 3*11 list)))
---
---take 11 list
-
-
-
-
-
-
 -- Return the general left boundary of all attackers
 getLeftBoundary [] = error "The list is empty"
 getLeftBoundary (x:xs) = go (fst (snd x)) xs
@@ -72,7 +59,7 @@ detectGameOver positionList = do
 
 
 -- Function called at each tick every 100ms (~10fps)
-loop xxs@(x:xs) gameData = do
+loopOld xxs@(x:xs) gameData = do
     -- Update informations
     let newGameData =  -- Ids
                        (getIdList gameData, 
@@ -115,7 +102,7 @@ loop xxs@(x:xs) gameData = do
     
     -- Loop again if the game is not over
     if not (detectGameOver (getAttackerPositionList newGameData))
-        then loop xs newGameData
+        then loopOld xs newGameData
     else putStrLn "Game Over"
 
 
@@ -134,7 +121,7 @@ display gameData = do
     repeatAction ((snd (fromList (getAttackerPositionList gameData) ! 1))-1) (putStrLn "|                                                                                                    |")
     
     -- Display all the attackers
-    displayAllAttacker gameData ((concatMap (replicate 2) [1..5]) `zip` (cycle [1,2]))
+    --displayAllAttacker gameData ((concatMap (replicate 2) [1..5]) `zip` (cycle [1,2]))
     
     -- Fill the gap between the bottom and the attackers
     repeatAction (33-(snd (fromList (getAttackerPositionList gameData) ! 55))) (putStrLn "|                                                                                                    |")
@@ -165,8 +152,8 @@ display gameData = do
 
 
 -- Display recursively a whole line of alive attackers
-displayAttackerLine gameData [] _ = putStr ""
-displayAttackerLine gameData (x:xs) line = do
+oldDisplayAttackerLine gameData [] _ = putStr ""
+oldDisplayAttackerLine gameData (x:xs) line = do
     -- Display the attacker if it is still alive
     let id = (((fst line)-1)*11)+x
     
@@ -185,18 +172,18 @@ displayAttackerLine gameData (x:xs) line = do
     else putStr ""
     
     -- Loop
-    displayAttackerLine gameData xs line
+    --displayAttackerLine gameData xs line
 
 
 -- Display all attackers, margins and the board borders
-displayAllAttacker gameData []     = putStr ""
-displayAllAttacker gameData (x:xs) = do
+oldDisplayAllAttacker gameData []     = putStr ""
+oldDisplayAllAttacker gameData (x:xs) = do
     -- Display the left border
     putStr "|"
     -- Display the space between the left side of a line and the first attacker alive
     repeatAction (getLeftBoundaryPerLine (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (fst x)) (putStr " ")
     -- Display attackers for this line
-    displayAttackerLine gameData [1..11] x
+    --displayAttackerLine gameData [1..11] x
     -- Display the space between the right side of a line and the last attacker alive
     repeatAction (96-(getRightBoundaryPerLine (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (fst x))) (putStr " ")
     -- Display the right border
@@ -207,7 +194,7 @@ displayAllAttacker gameData (x:xs) = do
     else putStr ""
     
     -- Loop
-    displayAllAttacker gameData xs
+    --displayAllAttacker gameData xs
     
 
 
