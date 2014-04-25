@@ -68,7 +68,11 @@ main = withInit [InitEverything] $ do
             
             -- Gather all elements together to pass them as parameters
             let resourceList = (background, crab, octopus, squid, spaceship, player, bullet, (bunkerTopLeft0, bunkerTopLeft1, bunkerTopLeft2, bunkerTopLeft3, bunkerTopRight0, bunkerTopRight1, bunkerTopRight2, bunkerTopRight3, bunkerCenterLeft0, bunkerCenterLeft1, bunkerCenterLeft2, bunkerCenterLeft3, bunkerCenterRight0, bunkerCenterRight1, bunkerCenterRight2, bunkerCenterRight3, bunkerPlain0, bunkerPlain1, bunkerPlain2, bunkerPlain3, bunkerDestroyed), baseline)
-            let appData = (MAIN, screen, (fontTitle, fontMenu, fontStatus), fontColor, resourceList)
+            let appData = (screen, (fontTitle, fontMenu, fontStatus), fontColor, resourceList)
+            
+            -- Declare and initialise all lists of variables needed within the same element to be able to pass it recursively
+            let gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0), [], (bunkerIdList, resetBunkerTypeList [], resetBunkerPositionList [], resetBunkerStateList []))
+            
             
             -- Display the main screen
             displayMainScreen appData
@@ -76,58 +80,102 @@ main = withInit [InitEverything] $ do
     
             -- Call the loop function which verify if the user wants to quit the app or continue to use it
             loop gameData appData
-    
-    where
-        -- Declare and initialise all lists of variables needed within the same element to be able to pass it recursively
-        --gameData = (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0, [])
-        gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0), [], (bunkerIdList, resetBunkerTypeList [], resetBunkerPositionList [], resetBunkerStateList []))
-        
-        -- The actual loop function
-        loop gameData appData = do
-            -- Pause the app for 30ms (~33 fps)
-            delay 30
-            
-            -- Update data here
-            -- Display changes here
-            
-            -- Verify if the user triggers an event
-            closeApplication <- handleEvents gameData appData
-            unless closeApplication (loop gameData appData)
-        
-        -- Handle all user events and key strokes
-        handleEvents gameData appData = do
-            event <- pollEvent
-            case event of
-                -- If the user pressed a key
-                (KeyDown (Keysym key _ _)) -> do
-                    case key of
-                        SDLK_ESCAPE -> return True
-                        SDLK_RETURN -> do
-                            if appStateEq (Dataset.getAppState appData) MAIN || appStateEq (Dataset.getAppState appData) GAMEOVER
-                                then (displayInGameScreen gameData appData)
-                                else putStr ""
-                            return False
-                        SDLK_SPACE  -> do
-                            if appStateEq (Dataset.getAppState appData) INGAME
-                                then putStr "" -- Verify if the player can shoot
-                                else putStr ""
-                            return False
-                        SDLK_LEFT   -> do
-                            if appStateEq (Dataset.getAppState appData) INGAME
-                                then putStr "" -- Verify if the player can go left
-                                else putStr ""
-                            return False
-                        SDLK_RIGHT  -> do
-                            if appStateEq (Dataset.getAppState appData) INGAME
-                                then putStr "" -- Verify if the player can go right
-                                else putStr ""
-                            return False
-                        _           -> return False
-                -- If the user decided to close the window or otherwise.. nothing
-                Quit    -> return True
-                NoEvent -> return False
-                _       -> return False
 
+
+
+
+
+-- Handle all user events and key strokes
+handleEvents gameData = do
+    event <- pollEvent
+    case event of
+        -- If the user pressed a key
+        (KeyDown (Keysym key _ _)) -> do
+            case key of
+                SDLK_ESCAPE -> return Dataset.Quit
+                SDLK_RETURN -> do
+                    if gameStateEq (getGameState gameData) MAIN || gameStateEq (getGameState gameData) GAMEOVER
+                        then return Play
+                        else return None
+                SDLK_SPACE  -> do
+                    if gameStateEq (getGameState gameData) INGAME
+                        then return Shoot
+                        else return None
+                SDLK_LEFT   -> do
+                    if gameStateEq (getGameState gameData) INGAME
+                        then return MoveLeft
+                        else return None
+                SDLK_RIGHT  -> do
+                    if gameStateEq (getGameState gameData) INGAME
+                        then return MoveRight
+                        else return None
+                _           -> return None
+        -- If the user decided to close the window or otherwise.. nothing
+        Graphics.UI.SDL.Quit -> return Dataset.Quit
+        NoEvent              -> return None
+        _                    -> return None
+
+
+
+
+
+-- The actual loop function
+loop gameData appData = do
+    -- Pause the app for 30ms (~33 fps)
+    delay 30
+    
+    -- Display the right screen
+    if gameStateEq (getGameState gameData) MAIN
+        then displayMainScreen appData
+    else if gameStateEq (getGameState gameData) GAMEOVER
+        then displayMainScreen appData -- TODO: display game over
+    else displayInGameScreen gameData appData
+    
+    
+    -- Verify if the user triggered an event and therefore collect new data to apply
+    result <- handleEvents gameData
+    if eventResultEq result Dataset.Quit
+        then putStr ""
+    else do
+        -- Update all data!
+        let newGameData = ((if eventResultEq result Play then INGAME else if gameStateEq (getGameState gameData) INGAME && not (isGameActive gameData) then GAMEOVER else getGameState gameData,
+                          isGameActive gameData,
+                          getLevel gameData,
+                          getScore gameData),
+                          (getPlayerLife gameData,
+                          getPlayerPosition gameData),
+                          (getAttackerIdList gameData,
+                          getAttackerTypeList gameData,
+                          moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
+                           (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
+                             (getAttackerPositionList gameData) 
+                             (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
+                           ) (if detectTurn                                    
+                               (getAliveAttackerPositionList                     -- Return only the positions of the attackers which are still alive
+                                 (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+                                 (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
+                               ) 
+                               (getAttackerDirection gameData) then 10 else 0    -- Determine the value of the Y shift (either 0 or 10) according to the result of the previous method
+                                                      ),
+                          getAttackerAliveList gameData,
+                          if detectTurn                                         -- Change the direction of attackers if a turn is detected                                  
+                              (getAliveAttackerPositionList                       -- Return only the positions of the attackers which are still alive
+                                  (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+                                  (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
+                               )  
+                              (getAttackerDirection gameData) 
+                            then (getAttackerDirection gameData)*(-1)            -- Invert it or..
+                            else (getAttackerDirection gameData)),                -- Keep the same
+                          getBulletList gameData,
+                          (getBunkerIdList gameData,
+                          getBunkerTypeList gameData,
+                          getBunkerPositionList gameData,
+                          getBunkerStateList gameData))
+        let newAppData = appData
+        
+        
+        -- Call the loop
+        loop newGameData newAppData
 
 
 -- Display the main screen elements
@@ -198,12 +246,12 @@ displayInGameScreen gameData appData = do
 	-- Display attackers
     displayAttacker (getAttackerTypeList gameData) appData (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))
     
-    -- Display an eventual spaceship
+    -- TODO: Display an eventual spaceship
     
     -- Draw all bunkers
     displayBunker (getBunkerTypeList gameData) (getBunkerStateList gameData) appData (getBunkerPositionList gameData)
     
-    -- Draw the bullets
+    -- TODO: Draw the bullets
     
     -- Draw the player
     applySurface (fst (getPlayerPosition gameData)) (755-(surfaceGetHeight (getPlayerImg appData))) (getPlayerImg appData) (getScreen appData)

@@ -43,16 +43,16 @@ getDownBoundary (x:xs) = go (snd (snd x)) xs
 -- Detect if attackers need to turn
 detectTurn :: [(Int, Position)] -> Int -> Bool
 detectTurn positionList direction = do
-    if direction == -1 && (getLeftBoundary positionList) == 2
+    if direction == -1 && (getLeftBoundary positionList) == 1
         then True
-    else if direction == 1 && (getRightBoundary positionList) == 95 -- 100 minus a width of 4 minus 1 because the call is made after moving
+    else if direction == 1 && (getRightBoundary positionList) == 976
         then True
     else False
 
 -- Detect if attackers have just landed
 detectGameOver :: [(Int, Position)] -> Bool
 detectGameOver positionList = do
-    if getDownBoundary positionList == 32
+    if getDownBoundary positionList == 672
         then True
     else False
 
