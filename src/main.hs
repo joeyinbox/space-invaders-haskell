@@ -77,8 +77,10 @@ main = withInit [InitEverything] $ do
             -- Display the main screen
             displayMainScreen appData
             
+            -- Allow repeated keys
+            enableKeyRepeat 10 10
     
-            -- Call the loop function which verify if the user wants to quit the app or continue to use it
+            -- Call the loop function
             loop gameData appData
 
 
@@ -143,7 +145,11 @@ loop gameData appData = do
                           getLevel gameData,
                           getScore gameData),
                           (getPlayerLife gameData,
-                          getPlayerPosition gameData),
+                          if eventResultEq result MoveLeft && fst (getPlayerPosition gameData) >= 5 
+                              then ((fst (getPlayerPosition gameData)-5), snd (getPlayerPosition gameData))
+                          else if eventResultEq result MoveRight && fst (getPlayerPosition gameData) <= (1019-surfaceGetWidth (getPlayerImg appData))
+                              then ((fst (getPlayerPosition gameData)+5), snd (getPlayerPosition gameData))
+                          else getPlayerPosition gameData),
                           (getAttackerIdList gameData,
                           getAttackerTypeList gameData,
                           moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
