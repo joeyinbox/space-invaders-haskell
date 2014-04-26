@@ -11,6 +11,7 @@ import Attacker
 import Player
 import Bullet
 import Bunker
+import Spaceship
 import Game
 import Utils
 
@@ -71,7 +72,7 @@ main = withInit [InitEverything] $ do
             let appData = (screen, (fontTitle, fontMenu, fontStatus), fontColor, resourceList)
             
             -- Declare and initialise all lists of variables needed within the same element to be able to pass it recursively
-            let gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList, resetAttackerPositionList, resetAttackerAliveList, resetAttackerDirection), [], (bunkerIdList, resetBunkerTypeList, resetBunkerPositionList, resetBunkerStateList))
+            let gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList, resetAttackerPositionList, resetAttackerAliveList, resetAttackerDirection), [], (bunkerIdList, resetBunkerTypeList, resetBunkerPositionList, resetBunkerStateList), resetSpaceship)
             
             -- Allow repeated keys
             enableKeyRepeat 10 10
@@ -139,7 +140,8 @@ loop gameData appData = do
         let newGameData = ((updateGameState result gameData,
                             updateGameActive result gameData,
                             updateLevel result gameData,
-                            updateScore result gameData appData),
+                            updateScore result gameData appData,
+                            updateTimestamp result gameData),
                            (updatePlayerLife result gameData appData,
                             updatePlayerPosition result gameData appData),
                            (getAttackerIdList gameData,                          -- TODO: useless to keep as there is already the global one?
@@ -151,7 +153,11 @@ loop gameData appData = do
                            (getBunkerIdList gameData,                            -- TODO: useless to keep as there is already the global one?
                             getBunkerTypeList gameData,
                             getBunkerPositionList gameData,
-                            updateBunkerStateList result gameData))
+                            updateBunkerStateList result gameData),
+                           (updateSpaceshipActive gameData,
+                            updateSpaceshipPosition gameData,
+                            updateSpaceshipDirection gameData,
+                            updateSpaceshipWorth gameData))
         
         
         -- Call the loop
@@ -197,6 +203,12 @@ updateScore result gameData appData = do
         
         -- Return the new score
         (getScore gameData)+(former-current)
+
+
+updateTimestamp result gameData = do
+    if eventResultEq result Play || length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
+        then 0
+    else ((getLevel gameData)+30)
     
 
 updatePlayerLife result gameData appData = do
@@ -283,7 +295,7 @@ updateBulletList result gameData appData = do
         -- Then, check if the player wants to shoot and can do it
         if eventResultEq result Shoot && not (isPlayerBulletStillActive (getBulletList gameData))
             then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1) True
-        else if (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 100) >= 90
+        else if (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 100) >= 95
             then do
                 makeAttackerShoot (getLowestAttackerPositionList (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))) newBulletList (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData))
         else newBulletList
@@ -295,15 +307,38 @@ updateBunkerStateList result gameData = do
     else affectBunkerStateList (getBunkerStateList gameData) (getBunkerPositionList gameData) (getBulletList gameData)
 
 
+updateSpaceshipActive gameData = do
+    if isSpaceshipActive gameData && (fst (getSpaceshipPosition gameData) < -44 || fst (getSpaceshipPosition gameData) > 1068)
+        then False
+    else if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 1000) > 995
+        then True
+    else isSpaceshipActive gameData
 
 
+updateSpaceshipPosition gameData = do
+    if isSpaceshipActive gameData && (getTimestamp gameData) == 0
+        then (-44, 100)
+    else if isSpaceshipActive gameData
+        then ((fst (getSpaceshipPosition gameData))+((getSpaceshipDirection gameData)*5), snd (getSpaceshipPosition gameData))
+    else if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 1000) > 995
+        then if (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) `quot` 2 == 0
+            then (-44, 100)
+        else (1068, 100)
+    else getSpaceshipPosition gameData
 
 
+updateSpaceshipDirection gameData = do
+    if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 1000) > 995
+        then if (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) `quot` 2 == 0
+            then 1
+        else -1
+    else getSpaceshipDirection gameData
 
 
-
-
-
+updateSpaceshipWorth gameData = do
+    if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 1000) > 995
+        then ((rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 5)+1)*50
+    else getSpaceshipWorth gameData
 
 
 
@@ -375,7 +410,8 @@ displayInGameScreen gameData appData = do
 	-- Display attackers
     displayAttacker (getAttackerTypeList gameData) appData (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))
     
-    -- TODO: Display an eventual spaceship
+    -- Display an eventual spaceship
+    applySurface (fst (getSpaceshipPosition gameData)) (snd (getSpaceshipPosition gameData)) (getSpaceshipImg appData) (getScreen appData)
     
     -- Draw all bunkers
     displayBunker (getBunkerTypeList gameData) (getBunkerStateList gameData) appData (getBunkerPositionList gameData)

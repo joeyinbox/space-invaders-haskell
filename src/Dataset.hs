@@ -24,87 +24,111 @@ gameStateEq _         _       = False
 -- 2.  game active?
 -- 3.  level
 -- 4.  score
--- 5.  player life
--- 6.  player position
--- 7.  list of attacker identifiers
--- 8.  list of attacker types
--- 9.  list of attacker positions
--- 10. list of attacker state (alive or not)
--- 11. direction of the attackers
--- 12. list of bullets
--- 13. list of bunker part identifiers
--- 14. list of bunker part types
--- 15. list of bunker part positions
--- 16. list of bunker part state
-type GameDataType = ((GameState, Bool, Int, Int), (Int, Position), ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int), [Bullet], ([Int], [(Int, BunkerType)], [(Int, Position)], [(Int, BunkerState)]))
+-- 5.  timestamp
+-- 6.  player life
+-- 7.  player position
+-- 8.  list of attacker identifiers
+-- 9.  list of attacker types
+-- 10. list of attacker positions
+-- 11. list of attacker state (alive or not)
+-- 12. direction of the attackers
+-- 13. list of bullets
+-- 14. list of bunker part identifiers
+-- 15. list of bunker part types
+-- 16. list of bunker part positions
+-- 17. list of bunker part state
+-- 18. spaceshipActive
+-- 19. spaceshipPosition
+-- 20. spaceshipDirection
+-- 21. spaceshipWorth
+type GameDataType = ((GameState, Bool, Int, Int, Int), (Int, Position), ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int), [Bullet], ([Int], [(Int, BunkerType)], [(Int, Position)], [(Int, BunkerState)]), (Bool, Position, Int, Int))
 
 
 
 -- Retrieve informations within GameDataType
 -- Get the game state
 getGameState :: GameDataType -> GameState
-getGameState ((a,_,_,_),_,_,_,_) = a
+getGameState ((a,_,_,_,_),_,_,_,_,_) = a
 
 -- Get the active state of the game
 isGameActive :: GameDataType -> Bool
-isGameActive ((_,a,_,_),_,_,_,_) = a
+isGameActive ((_,a,_,_,_),_,_,_,_,_) = a
 
 -- Get the level
 getLevel :: GameDataType -> Int
-getLevel ((_,_,a,_),_,_,_,_) = a
+getLevel ((_,_,a,_,_),_,_,_,_,_) = a
 
 -- Get the score
 getScore :: GameDataType -> Int
-getScore ((_,_,_,a),_,_,_,_) = a
+getScore ((_,_,_,a,_),_,_,_,_,_) = a
+
+-- Get the timestamp
+getTimestamp :: GameDataType -> Int
+getTimestamp ((_,_,_,_,a),_,_,_,_,_) = a
 
 -- Get the player remaining lives count
 getPlayerLife :: GameDataType -> Int
-getPlayerLife (_,(a,_),_,_,_) = a
+getPlayerLife (_,(a,_),_,_,_,_) = a
 
 -- Get the player position
 getPlayerPosition :: GameDataType -> Position
-getPlayerPosition (_,(_,a),_,_,_) = a
+getPlayerPosition (_,(_,a),_,_,_,_) = a
 
 -- Get the list of attacker identifiers
 getAttackerIdList :: GameDataType -> [Int]
-getAttackerIdList (_,_,(a,_,_,_,_),_,_) = a
+getAttackerIdList (_,_,(a,_,_,_,_),_,_,_) = a
 
 -- Get the list of attacker types
 getAttackerTypeList :: GameDataType -> [(Int, AttackerType)]
-getAttackerTypeList (_,_,(_,a,_,_,_),_,_) = a
+getAttackerTypeList (_,_,(_,a,_,_,_),_,_,_) = a
 
 -- Get the list of attacker position
 getAttackerPositionList :: GameDataType -> [(Int, Position)]
-getAttackerPositionList (_,_,(_,_,a,_,_),_,_) = a
+getAttackerPositionList (_,_,(_,_,a,_,_),_,_,_) = a
 
 -- Get the list indicating if the attackers are still alive
 getAttackerAliveList :: GameDataType -> [(Int, Bool)]
-getAttackerAliveList (_,_,(_,_,_,a,_),_,_) = a
+getAttackerAliveList (_,_,(_,_,_,a,_),_,_,_) = a
 
 -- Get the attacker direction
 getAttackerDirection :: GameDataType -> Int
-getAttackerDirection (_,_,(_,_,_,_,a),_,_) = a
+getAttackerDirection (_,_,(_,_,_,_,a),_,_,_) = a
 
 -- Get the list of bullets
 getBulletList :: GameDataType -> [Bullet]
-getBulletList (_,_,_,a,_) = a
+getBulletList (_,_,_,a,_,_) = a
 
 -- Get the list of bunker part identifiers
 getBunkerIdList :: GameDataType -> [Int]
-getBunkerIdList (_,_,_,_,(a,_,_,_)) = a
+getBunkerIdList (_,_,_,_,(a,_,_,_),_) = a
 
 -- Get the list of bunker part types
 getBunkerTypeList :: GameDataType -> [(Int, BunkerType)]
-getBunkerTypeList (_,_,_,_,(_,a,_,_)) = a
+getBunkerTypeList (_,_,_,_,(_,a,_,_),_) = a
 
 -- Get the list of bunker part position
 getBunkerPositionList :: GameDataType -> [(Int, Position)]
-getBunkerPositionList (_,_,_,_,(_,_,a,_)) = a
+getBunkerPositionList (_,_,_,_,(_,_,a,_),_) = a
 
 -- Get the list of bunker part state
 getBunkerStateList :: GameDataType -> [(Int, BunkerState)]
-getBunkerStateList (_,_,_,_,(_,_,_,a)) = a
+getBunkerStateList (_,_,_,_,(_,_,_,a),_) = a
 
+-- Get the list of bunker part identifiers
+isSpaceshipActive :: GameDataType -> Bool
+isSpaceshipActive (_,_,_,_,_,(a,_,_,_)) = a
+
+-- Get the list of bunker part types
+getSpaceshipPosition :: GameDataType -> Position
+getSpaceshipPosition (_,_,_,_,_,(_,a,_,_)) = a
+
+-- Get the list of bunker part position
+getSpaceshipDirection :: GameDataType -> Int
+getSpaceshipDirection (_,_,_,_,_,(_,_,a,_)) = a
+
+-- Get the list of bunker part state
+getSpaceshipWorth :: GameDataType -> Int
+getSpaceshipWorth (_,_,_,_,_,(_,_,_,a)) = a
 
 
 
@@ -161,8 +185,8 @@ getBaselineImg (_,_,_,(_,_,_,_,_,_,_,_,a)) = a
 
 
 -- Hard Reset Game informations
-hardResetGame :: (GameState, Bool, Int, Int)
-hardResetGame = (MAIN, False, 1, 0)
+hardResetGame :: (GameState, Bool, Int, Int, Int)
+hardResetGame = (MAIN, False, 1, 0, 0)
 
 
 -- Define Event result type
