@@ -9,14 +9,6 @@ type Bullet = (Position, (Int, Bool))
 addBullet :: [Bullet] -> Position -> Int -> Bool -> [Bullet]
 addBullet list position direction fromPlayer = (position, (direction, fromPlayer)) : list
 
--- Remove a bullet from the bullet list via its position            TODO: to keep? used?
-removeBullet :: [Bullet] -> Position -> [Bullet]
-removeBullet []     _ = []
-removeBullet (x:xs) y = do
-    if fst (fst x) == fst y && snd (fst x) == snd y 
-        then removeBullet xs y
-    else x : removeBullet xs y
-
 -- (re-)Initialise the list of bullets
 resetBulletList :: [a] -> [a]
 resetBulletList _ = []

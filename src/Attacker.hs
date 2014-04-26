@@ -2,6 +2,7 @@ module Attacker where
 
 import Data.Map
 import Utils
+import Bullet
 
 
 -- This list store the identifier of all attackers
@@ -82,3 +83,63 @@ moveAttackerSide xs z = Prelude.map (\(x,y) -> (x, (fst y+z, snd y))) xs
 -- Shift all Y positions by a given number
 moveAttackerDown :: [(Int, Position)] -> Int -> [(Int, Position)]
 moveAttackerDown xs z = Prelude.map (\(x,y) -> (x, (fst y, snd y+z))) xs
+
+
+-- Get the position of the lowest attackers per column
+getLowestAttackerPositionList :: [(Int, Position)] -> [(Int, Position)]
+getLowestAttackerPositionList xs = go [1..11] xs
+    where
+        go []     _   = []
+        go (y:ys) xxs = do
+            let list = getAliveAttackerPositionListFromIdentifierList (y : (Prelude.map (+y) (Prelude.map (*11) [1..4]))) xxs
+            
+            if length list == 0
+                then go ys xxs
+            else getLowestAttackerListPerColumn list ++ go ys xxs
+
+
+-- Get the position of the lowest attackers per column
+getLowestAttackerListPerColumn :: [(Int, Position)] -> [(Int, Position)]
+getLowestAttackerListPerColumn []     = []
+getLowestAttackerListPerColumn (x:xs) = go x xs
+    where
+        go m []     = [m]
+        go m (y:ys) = if snd (snd m) > snd (snd y) then go m ys else go y ys
+
+
+
+
+getAliveAttackerPositionListFromIdentifierList :: [Int] -> [(Int, Position)] -> [(Int, Position)]
+getAliveAttackerPositionListFromIdentifierList []     _   = []
+getAliveAttackerPositionListFromIdentifierList (x:xs) yys = do
+    if isInList x yys
+        then (x, (fromList yys ! x)) : getAliveAttackerPositionListFromIdentifierList xs yys
+    else getAliveAttackerPositionListFromIdentifierList xs yys
+
+
+
+makeAttackerShoot :: [(Int, Position)] -> [Bullet] -> Int -> [Bullet]
+makeAttackerShoot x y r = go x y [1..((r `rem` 5)+2)] r
+    where
+        go [] _ _      _ = y
+        go _  y []     _ = y
+        go x  y (z:zs) r = go x (addBullet y ((fst (snd (x !! (rem r (length x)))))+19, (snd (snd (x !! (rem r (length x)))))+36) 1 False) zs r
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

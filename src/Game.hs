@@ -91,7 +91,7 @@ detectTouchedAttacker x  []     _    _ = x
 detectTouchedAttacker x  (y:ys) size pos = do
     -- Check if the current bullet position asserted corresponds to the position of the current attacker
     --    bullet X   >= attacker X&&    bullet X   <=   attacker X + width   &&    bullet Y   >= attacker Y&&    bullet Y   <=  attacker Y + height
-    if (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+(fst size)) && (snd (fst y)) >= (snd pos) && (snd (fst y)) <= ((snd pos)+(snd size))
+    if fst (snd y) == -1 && (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+(fst size)) && (snd (fst y)) >= (snd pos) && (snd (fst y)) <= ((snd pos)+(snd size))
         then (fst x, False)
     else detectTouchedAttacker x ys size pos
 
@@ -175,8 +175,8 @@ keepUnexplodedBulletListOnAttacker x  (y:ys) g a = do
                 else (surfaceGetWidth (getSpaceshipImg a), surfaceGetHeight (getSpaceshipImg a))
     
     -- Check if the current bullet position asserted corresponds to the position of the current attacker
-    --    bullet X   >=  attacker X   &&    bullet X   <=    attacker X + width      &&    bullet Y   >=   attacker Y  &&    bullet Y   <=   attacker Y + height
-    if (fst (fst x)) >= (fst (snd y)) && (fst (fst x)) <= ((fst (snd y))+(fst size)) && (snd (fst x)) >= (snd (snd y)) && (snd (fst x)) <= ((snd (snd y))+(snd size))
+    --        UP               bullet X   >=  attacker X   &&    bullet X   <=    attacker X + width      &&    bullet Y   >=   attacker Y  &&    bullet Y   <=   attacker Y + height
+    if fst (snd x) == -1 && (fst (fst x)) >= (fst (snd y)) && (fst (fst x)) <= ((fst (snd y))+(fst size)) && (snd (fst x)) >= (snd (snd y)) && (snd (fst x)) <= ((snd (snd y))+(snd size))
         then []
     else keepUnexplodedBulletListOnAttacker x ys g a
 
@@ -221,20 +221,12 @@ isPlayerBulletStillActive (y:ys) = do
     else isPlayerBulletStillActive ys
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- Generate a fake random number based on game data
+generateRandomNumber :: [(Int, Position)] -> Position -> Int
+generateRandomNumber xxs p = go 42 xxs p
+    where
+        go s []     p = (s+1337)
+        go s (x:xs) p = go (s+(fst p)+((fst x)+1)+((fst (snd x))+1)+((snd (snd x))+1)) xs p
 
 
 

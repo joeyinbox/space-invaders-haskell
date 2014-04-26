@@ -31,17 +31,20 @@ merge xs     []     = xs
 merge []     ys     = ys
 merge (x:xs) (y:ys) = x : y : merge xs ys
 
--- Repeat a function or an action n times
-repeatAction 0 _ = return ()
-repeatAction n action = do
-    action
-    repeatAction (n-1) action
 
--- Sleep for 500ms (~2fps)
-tick :: IO ()
-tick = do t <- getCurrentTime
-          let secs = round (realToFrac $ utctDayTime t) `rem` 100 -- 100
-          threadDelay $ 5000 * (100 - secs) -- 1000 100
-
--- Duplicate each element of a list
-duplicate = (>>= replicate 2)
+-- Check if a number is in a list
+isInList :: Int -> [(Int, Position)] -> Bool
+isInList _  []     = False
+isInList id (x:xs) = do
+    if id == fst x
+        then True
+    else isInList id xs
+            
+            
+            
+            
+            
+            
+            
+            
+            

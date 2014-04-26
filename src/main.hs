@@ -141,8 +141,7 @@ loop gameData appData = do
                             updateLevel result gameData,
                             updateScore result gameData appData),
                            (updatePlayerLife result gameData appData,
-                            updatePlayerPosition result gameData appData,
-                            updatePlayerBullet gameData),
+                            updatePlayerPosition result gameData appData),
                            (getAttackerIdList gameData,                          -- TODO: useless to keep as there is already the global one?
                             getAttackerTypeList gameData,
                             updateAttackerPosition result gameData,
@@ -182,6 +181,7 @@ updateGameActive result gameData = do
 updateLevel result gameData = do
     if eventResultEq result Play 
         then 1
+    -- Detect the end of a wave
     else if length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
         then (getLevel gameData)+1
     else getLevel gameData
@@ -202,6 +202,9 @@ updateScore result gameData appData = do
 updatePlayerLife result gameData appData = do
     if eventResultEq result Play 
         then 3
+    -- Detect the end of a wave
+    else if length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
+        then (getPlayerLife gameData)+1
     else if detectTouchedPlayer (getPlayerPosition gameData) (getBulletList gameData) (surfaceGetWidth (getPlayerImg appData), surfaceGetHeight (getPlayerImg appData))
         then (getPlayerLife gameData)-1
     else getPlayerLife gameData
@@ -217,12 +220,8 @@ updatePlayerPosition result gameData appData = do
     else getPlayerPosition gameData
 
 
-updatePlayerBullet gameData = do
-    (getPlayerBullet gameData)
-
-
 updateAttackerPosition result gameData = do
-    if eventResultEq result Play 
+    if eventResultEq result Play || length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
         then resetAttackerPositionList
     else moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
            (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
@@ -237,14 +236,14 @@ updateAttackerPosition result gameData = do
 
 
 updateAttackerAliveList result gameData appData = do
-    if eventResultEq result Play 
+    if eventResultEq result Play || length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
         then resetAttackerAliveList
     else keepUntouchedAttackerList (getAttackerAliveList gameData) (getBulletList gameData) gameData appData
 
 
 -- Change the direction of attackers if a turn is detected     
 updateAttackerDirection result gameData = do
-    if eventResultEq result Play 
+    if eventResultEq result Play || length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
         then resetAttackerDirection
     else if detectTurn
            (getAliveAttackerPositionList                        -- Return only the positions of the attackers which are still alive
@@ -256,35 +255,42 @@ updateAttackerDirection result gameData = do
 
 
 updateBulletList result gameData appData = do
-    -- First, update all bullet positions on a restrained list of unexploded bullets
-    let newBulletList = checkBulletPosition 
-                          (updateBulletPosition 
-                            (keepUnexplodedBulletListOnBunkerList 
-                              (keepUnexplodedBulletListOnAttackerList 
-                                (keepUnexplodedBulletListOnPlayer 
-                                  (getPlayerPosition gameData) 
-                                  (getBulletList gameData) 
-                                  (surfaceGetWidth 
-                                    (getPlayerImg appData), surfaceGetHeight (getPlayerImg appData))) 
-                                (getAliveAttackerPositionList 
-                                  (getAttackerAliveList gameData) 
-                                  (getAttackerPositionList gameData)) 
-                                gameData 
-                                appData) 
-                              (getUndestroyedBunkerPositionList 
-                                (getBunkerStateList gameData) 
-                                (getBunkerPositionList gameData)))) 
-                            (surfaceGetHeight (getBulletImg appData))
+    -- Detect the end of a wave
+    if length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
+        then []
+    else do
+        -- First, update all bullet positions on a restrained list of unexploded bullets
+        let newBulletList = checkBulletPosition 
+                              (updateBulletPosition 
+                                (keepUnexplodedBulletListOnBunkerList 
+                                  (keepUnexplodedBulletListOnAttackerList 
+                                    (keepUnexplodedBulletListOnPlayer 
+                                      (getPlayerPosition gameData) 
+                                      (getBulletList gameData) 
+                                      (surfaceGetWidth 
+                                        (getPlayerImg appData), surfaceGetHeight (getPlayerImg appData))) 
+                                    (getAliveAttackerPositionList 
+                                      (getAttackerAliveList gameData) 
+                                      (getAttackerPositionList gameData)) 
+                                    gameData 
+                                    appData) 
+                                  (getUndestroyedBunkerPositionList 
+                                    (getBunkerStateList gameData) 
+                                    (getBunkerPositionList gameData)))) 
+                                (surfaceGetHeight (getBulletImg appData))
     
     
-    -- Then, check if the player wants to shoot and can do it
-    if eventResultEq result Shoot && not (isPlayerBulletStillActive (getBulletList gameData))
-        then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1) True
-    else newBulletList
+        -- Then, check if the player wants to shoot and can do it
+        if eventResultEq result Shoot && not (isPlayerBulletStillActive (getBulletList gameData))
+            then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1) True
+        else if (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData)) 100) >= 90
+            then do
+                makeAttackerShoot (getLowestAttackerPositionList (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))) newBulletList (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData))
+        else newBulletList
 
 
 updateBunkerStateList result gameData = do
-    if eventResultEq result Play 
+    if eventResultEq result Play || length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
         then resetBunkerStateList
     else affectBunkerStateList (getBunkerStateList gameData) (getBunkerPositionList gameData) (getBulletList gameData)
 
