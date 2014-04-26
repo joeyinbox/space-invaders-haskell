@@ -118,12 +118,12 @@ getAliveAttackerPositionListFromIdentifierList (x:xs) yys = do
 
 
 
-makeAttackerShoot :: [(Int, Position)] -> [Bullet] -> Int -> [Bullet]
-makeAttackerShoot x y r = go x y [1..((r `rem` 5)+2)] r
+makeAttackerShoot :: [(Int, Position)] -> [Bullet] -> Int -> Int -> [Bullet]
+makeAttackerShoot x y r t = go x y [1..((r `rem` 5)+(2*(1+t)))] r t
     where
-        go [] _ _      _ = y
-        go _  y []     _ = y
-        go x  y (z:zs) r = go x (addBullet y ((fst (snd (x !! (rem r (length x)))))+19, (snd (snd (x !! (rem r (length x)))))+36) 1 False) zs r
+        go [] _ _      _ _ = y
+        go _  y []     _ _ = y
+        go x  y (z:zs) r t = go x (addBullet y ((fst (snd (x !! (rem r (length x)))))+19, (snd (snd (x !! (rem r (length x)))))+36) 1 False) zs r t
 
 
 

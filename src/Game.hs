@@ -54,7 +54,7 @@ detectTurn positionList direction = do
 -- Detect if attackers have just landed
 detectGameOver :: [(Int, Position)] -> Bool
 detectGameOver positionList = do
-    if getDownBoundary positionList == 672
+    if getDownBoundary positionList >= 636
         then True
     else False
 

@@ -179,7 +179,7 @@ updateGameActive result gameData = do
         then True
     else if gameStateEq (getGameState gameData) MAIN || gameStateEq (getGameState gameData) GAMEOVER
         then False
-    else if (getPlayerLife gameData) <= 0
+    else if (getPlayerLife gameData) <= 0 || detectGameOver (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))
         then False
     else True
 
@@ -305,9 +305,10 @@ updateBulletList result gameData appData = do
         -- Then, check if the player wants to shoot and can do it
         if eventResultEq result Shoot && not (isPlayerBulletStillActive (getBulletList gameData))
             then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1) True
+        -- Or if the attackers will shoot randomly
         else if (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 100) >= 95
             then do
-                makeAttackerShoot (getLowestAttackerPositionList (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))) newBulletList (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData))
+                makeAttackerShoot (getLowestAttackerPositionList (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))) newBulletList (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) (getSpeedFactor (getLevel gameData) (getTimestamp gameData))
         else newBulletList
 
 
@@ -322,7 +323,7 @@ updateSpaceshipActive gameData appData = do
         then False
     else if isSpaceshipActive gameData && (fst (getSpaceshipPosition gameData) < -44 || fst (getSpaceshipPosition gameData) > 1068)
         then False
-    else if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 997
+    else if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 995
         then True
     else isSpaceshipActive gameData
 
@@ -331,8 +332,8 @@ updateSpaceshipPosition gameData appData = do
     if isSpaceshipActive gameData && ((getTimestamp gameData) == 0 || detectTouchedSpaceship (getSpaceshipPosition gameData) (getBulletList gameData) (isSpaceshipActive gameData) (surfaceGetWidth (getSpaceshipImg appData), surfaceGetHeight (getSpaceshipImg appData)))
         then (-44, 100)
     else if isSpaceshipActive gameData
-        then ((fst (getSpaceshipPosition gameData))+((getSpaceshipDirection gameData)*5), snd (getSpaceshipPosition gameData))
-    else if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 997
+        then ((fst (getSpaceshipPosition gameData))+((getSpaceshipDirection gameData)*((1+getSpeedFactor (getLevel gameData) (getTimestamp gameData))*2)), snd (getSpaceshipPosition gameData))
+    else if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 995
         then if (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) `quot` 2 == 0
             then (-44, 100)
         else (1068, 100)
@@ -340,7 +341,7 @@ updateSpaceshipPosition gameData appData = do
 
 
 updateSpaceshipDirection gameData = do
-    if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 997
+    if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 995
         then if (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) `quot` 2 == 0
             then 1
         else -1
@@ -348,7 +349,7 @@ updateSpaceshipDirection gameData = do
 
 
 updateSpaceshipWorth gameData = do
-    if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 997
+    if not (isSpaceshipActive gameData) && (getTimestamp gameData) > 0 && (rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 1000) > 995
         then ((rem (generateRandomNumber (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (getPlayerPosition gameData) (getTimestamp gameData)) 5)+1)*50
     else getSpaceshipWorth gameData
 
@@ -418,15 +419,15 @@ displayInGameScreen gameData appData = do
     txt <- renderTextSolid (getFontStatus appData) ("LIFE: " ++ (show (getPlayerLife gameData))) (getFontColor appData)
     applySurface (1004-surfaceGetWidth txt) 20 txt (getScreen appData)
 	
+    
+    -- Draw all bunkers
+    displayBunker (getBunkerTypeList gameData) (getBunkerStateList gameData) appData (getBunkerPositionList gameData)
 	
 	-- Display attackers
     displayAttacker (getAttackerTypeList gameData) appData (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData))
     
     -- Display an eventual spaceship
     applySurface (fst (getSpaceshipPosition gameData)) (snd (getSpaceshipPosition gameData)) (getSpaceshipImg appData) (getScreen appData)
-    
-    -- Draw all bunkers
-    displayBunker (getBunkerTypeList gameData) (getBunkerStateList gameData) appData (getBunkerPositionList gameData)
     
     -- Draw the bullets
     displayBullet (getBulletList gameData) appData
