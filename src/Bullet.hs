@@ -2,6 +2,7 @@ module Bullet where
 
 import Utils
 
+
 -- Define Bullet list item (Position, Direction)
 type Bullet = (Position, (Int, Bool))
 
@@ -10,8 +11,8 @@ addBullet :: [Bullet] -> Position -> Int -> Bool -> [Bullet]
 addBullet list position direction fromPlayer = (position, (direction, fromPlayer)) : list
 
 -- (re-)Initialise the list of bullets
-resetBulletList :: [a] -> [a]
-resetBulletList _ = []
+resetBulletList :: [a]
+resetBulletList = []
 
 -- Update the position of all bullets
 updateBulletPosition :: [Bullet] -> [Bullet]

@@ -1,27 +1,27 @@
 module Attacker where
 
 import Data.Map
+
 import Utils
 import Bullet
 
 
--- This list store the identifier of all attackers
+-- This list stores the identifier of all attackers
 attackerIdList = [1..55]
 
+
 -- Define Attacker types
-data AttackerType = Crab | Octopus | Squid | Spaceship
+data AttackerType = Crab | Octopus | Squid
 
 -- Define Attacker type checking
 attackerTypeEq :: AttackerType -> AttackerType -> Bool
 attackerTypeEq Crab      Crab      = True
 attackerTypeEq Octopus   Octopus   = True
 attackerTypeEq Squid     Squid     = True
-attackerTypeEq Spaceship Spaceship = True
 attackerTypeEq _         _         = False
 
 
 -- Return the worth value of an Attacker type
--- For now, the value of the spaceship is fixed because of IO limitations (use of MonadRandom package?)
 getAttackerWorth :: AttackerType -> Int
 getAttackerWorth t = do
     if attackerTypeEq Crab t 
@@ -30,12 +30,10 @@ getAttackerWorth t = do
         then 30
     else if attackerTypeEq Squid t 
         then 10
-    else if attackerTypeEq Spaceship t 
-        then 200
     else 0
 
 
--- Return a list of all alive attackers
+-- Return a list of identifiers of all alive attackers
 getAliveAttackerList :: [(Int, Bool)] -> [Int]
 getAliveAttackerList [] = []
 getAliveAttackerList (x:xs) = do
@@ -43,7 +41,7 @@ getAliveAttackerList (x:xs) = do
         then fst x : getAliveAttackerList xs
     else getAliveAttackerList xs
 
--- Return a list of tuples (Int, Position) of all alive attackers
+-- Return a list of the position of all alive attackers
 getAliveAttackerPositionList :: [(Int, Bool)] -> [(Int, Position)] -> [(Int, Position)]
 getAliveAttackerPositionList [] _ = []
 getAliveAttackerPositionList (x:xs) yys = do
@@ -76,6 +74,7 @@ resetAttackerPositionList = do
 resetAttackerDirection :: Int
 resetAttackerDirection = 1
 
+
 -- Shift all X positions by a given number
 moveAttackerSide :: [(Int, Position)] -> Int -> [(Int, Position)]
 moveAttackerSide xs z = Prelude.map (\(x,y) -> (x, (fst y+z, snd y))) xs
@@ -85,7 +84,7 @@ moveAttackerDown :: [(Int, Position)] -> Int -> [(Int, Position)]
 moveAttackerDown xs z = Prelude.map (\(x,y) -> (x, (fst y, snd y+z))) xs
 
 
--- Get the position of the lowest attackers per column
+-- Get the list of position of the lowest attackers per column
 getLowestAttackerPositionList :: [(Int, Position)] -> [(Int, Position)]
 getLowestAttackerPositionList xs = go [1..11] xs
     where
@@ -98,7 +97,7 @@ getLowestAttackerPositionList xs = go [1..11] xs
             else getLowestAttackerListPerColumn list ++ go ys xxs
 
 
--- Get the position of the lowest attackers per column
+-- Get the position of the lowest attackers for a given column column
 getLowestAttackerListPerColumn :: [(Int, Position)] -> [(Int, Position)]
 getLowestAttackerListPerColumn []     = []
 getLowestAttackerListPerColumn (x:xs) = go x xs
@@ -107,8 +106,7 @@ getLowestAttackerListPerColumn (x:xs) = go x xs
         go m (y:ys) = if snd (snd m) > snd (snd y) then go m ys else go y ys
 
 
-
-
+-- Get the list of positions of all alive attackers from a list of identifiers
 getAliveAttackerPositionListFromIdentifierList :: [Int] -> [(Int, Position)] -> [(Int, Position)]
 getAliveAttackerPositionListFromIdentifierList []     _   = []
 getAliveAttackerPositionListFromIdentifierList (x:xs) yys = do
@@ -117,29 +115,10 @@ getAliveAttackerPositionListFromIdentifierList (x:xs) yys = do
     else getAliveAttackerPositionListFromIdentifierList xs yys
 
 
-
+-- Make some attackers shoot down
 makeAttackerShoot :: [(Int, Position)] -> [Bullet] -> Int -> Int -> [Bullet]
 makeAttackerShoot x y r t = go x y [1..((r `rem` 5)+(2*(1+t)))] r t
     where
         go [] _ _      _ _ = y
         go _  y []     _ _ = y
         go x  y (z:zs) r t = go x (addBullet y ((fst (snd (x !! (rem r (length x)))))+19, (snd (snd (x !! (rem r (length x)))))+36) 1 False) zs r t
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

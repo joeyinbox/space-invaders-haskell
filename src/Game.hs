@@ -1,7 +1,9 @@
 module Game where
 
-import Graphics.UI.SDL
 import Data.Map
+
+import Graphics.UI.SDL
+
 import Dataset
 import Attacker
 import Bullet
@@ -9,38 +11,41 @@ import Bunker
 import Utils
 
 
-
 -- Return the general left boundary of all attackers
-getLeftBoundary [] = error "The list is empty"
+getLeftBoundary [] = 0
 getLeftBoundary (x:xs) = go (fst (snd x)) xs
     where
         go m [] = m 
         go m (y:ys) = if m < (fst (snd y)) then go m ys else go (fst (snd y)) ys
 
 -- Return the left boundary for a specified line
-getLeftBoundaryPerLine [] _ = error "The list is empty"
+getLeftBoundaryPerLine [] _ = 0
 getLeftBoundaryPerLine (x:xs) line = go (fst (snd x)) (reverse (take 11 (reverse (take (line*11) xs))))
     where
         go m [] = m 
         go m (y:ys) = if m < (fst (snd y)) then go m ys else go (fst (snd y)) ys
-    
-getRightBoundary [] = error "The list is empty"
+
+-- Return the general right boundary of all attackers
+getRightBoundary [] = 0
 getRightBoundary (x:xs) = go (fst (snd x)) xs
     where
         go m [] = m 
         go m (y:ys) = if m > (fst (snd y)) then go m ys else go (fst (snd y)) ys
 
-getRightBoundaryPerLine [] _ = error "The list is empty"
+-- Return the right boundary for a specified line
+getRightBoundaryPerLine [] _ = 0
 getRightBoundaryPerLine (x:xs) line = go (fst (snd x)) (reverse (take 11 (reverse (take (line*11) xs))))
     where
         go m [] = m 
         go m (y:ys) = if m > (fst (snd y)) then go m ys else go (fst (snd y)) ys
 
-getDownBoundary [] = error "The list is empty"
+-- Return the general bottom boundary of all attackers
+getDownBoundary [] = 0
 getDownBoundary (x:xs) = go (snd (snd x)) xs
     where
         go m [] = m 
         go m (y:ys) = if m > (snd (snd y)) then go m ys else go (snd (snd y)) ys
+
 
 -- Detect if attackers need to turn
 detectTurn :: [(Int, Position)] -> Int -> Bool
@@ -51,6 +56,7 @@ detectTurn positionList direction = do
         then True
     else False
 
+
 -- Detect if attackers have just landed
 detectGameOver :: [(Int, Position)] -> Bool
 detectGameOver positionList = do
@@ -59,10 +65,7 @@ detectGameOver positionList = do
     else False
 
 
-
-
--- Mark all attackers which enter in collision with a bullet as not alive
---keepUntouchedAttackerList :: [(Int, Bool)] -> [(Position, (Int, Bool))] -> GameDataType -> AppDataType -> [(Int, Bool)]
+-- Mark all attackers who enter in collision with a bullet as not alive
 keepUntouchedAttackerList []     _   _ _ = []
 keepUntouchedAttackerList (x:xs) yys g a = do
     if not (snd x)
@@ -83,9 +86,7 @@ keepUntouchedAttackerList (x:xs) yys g a = do
         -- Check if the current attacker touch any of all the bullets
         detectTouchedAttacker x yys size pos : keepUntouchedAttackerList xs yys g a
 
-
-
--- Check if an attacker touch any of all the bullets
+-- Check if an attacker touches any of all the bullets
 detectTouchedAttacker :: (Int, Bool) -> [(Position, (Int, Bool))] -> (Int, Int) -> Position -> (Int, Bool)
 detectTouchedAttacker x  []     _    _ = x
 detectTouchedAttacker x  (y:ys) size pos = do
@@ -96,7 +97,6 @@ detectTouchedAttacker x  (y:ys) size pos = do
     else detectTouchedAttacker x ys size pos
 
 
-
 -- Return the list of points available in a list of attackers
 getEarnedPoints :: [(Int, Bool)] -> [(Int, AttackerType)] -> [Int]
 getEarnedPoints []     _  = []
@@ -104,8 +104,6 @@ getEarnedPoints (x:xs) ys = do
     if snd x
         then (getAttackerWorth (fromList ys ! (fst x))) : getEarnedPoints xs ys
     else getEarnedPoints xs ys
-
-
 
 
 -- Update the state of the parts of all bunkers if they touch a bullet
@@ -135,7 +133,6 @@ affectBunkerState x (y:ys) pos = do
     else affectBunkerState x ys pos
 
 
-
 -- Check if the player is touched by any of all the bullets
 detectTouchedPlayer :: Position -> [(Position, (Int, Bool))] -> (Int, Int) -> Bool
 detectTouchedPlayer x  []     _    = False
@@ -153,20 +150,11 @@ detectTouchedSpaceship x  []     _      _    = False
 detectTouchedSpaceship x  (y:ys) active size = do
     if not active
         then False
-    -- Check if the current bullet position asserted corresponds to the position of the player
+    -- Check if the current bullet position asserted corresponds to the position of the spaceship
     --             UP              bullet X   >= spaceship X  && bullet X  <=  spaceship X + width &&    bullet Y  >= spaceship Y &&  bullet Y <=  spaceship Y + height
     else if fst (snd y) == -1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
         then True
     else detectTouchedSpaceship x ys active size
-
-
-
-
-
-
-
-
-
 
 
 -- Keep only unexploded bullets facing attackers
@@ -194,9 +182,6 @@ keepUnexplodedBulletListOnAttacker x  (y:ys) g a = do
     else keepUnexplodedBulletListOnAttacker x ys g a
 
 
-
-
-
 -- Keep only unexploded bullets facing bunkers
 keepUnexplodedBulletListOnBunkerList []     _   = []
 keepUnexplodedBulletListOnBunkerList (x:xs) yys = (keepUnexplodedBulletListOnBunker x yys) ++ (keepUnexplodedBulletListOnBunkerList xs yys)
@@ -214,7 +199,6 @@ keepUnexplodedBulletListOnBunker x  (y:ys) = do
     else keepUnexplodedBulletListOnBunker x ys
 
 
-
 -- Keep only unexploded bullets facing the player
 keepUnexplodedBulletListOnPlayer x []     _    = []
 keepUnexplodedBulletListOnPlayer x (y:ys) size = do
@@ -223,7 +207,6 @@ keepUnexplodedBulletListOnPlayer x (y:ys) size = do
     if fst (snd y) == 1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
         then [] -- remove all bullets as the player has been touched
     else y : keepUnexplodedBulletListOnPlayer x ys size
-
 
 
 -- Keep only unexploded bullets facing the spaceship
@@ -238,9 +221,6 @@ keepUnexplodedBulletListOnSpaceship x yys@(y:ys) active size = do
     else y : keepUnexplodedBulletListOnSpaceship x ys active size
 
 
-
-
-
 -- Verify if the player bullet is still active to allow him to shoot again
 isPlayerBulletStillActive :: [(Position, (Int, Bool))] -> Bool
 isPlayerBulletStillActive [] = False
@@ -248,29 +228,3 @@ isPlayerBulletStillActive (y:ys) = do
     if snd (snd y)
         then True
     else isPlayerBulletStillActive ys
-
-
--- Generate a fake random number based on game data
-generateRandomNumber :: [(Int, Position)] -> Position -> Int -> Int
-generateRandomNumber xxs p r = go r xxs p
-    where
-        go s []     p = (s+1337)
-        go s (x:xs) p = go (s+(fst p)+((fst x)+1)+((fst (snd x))+1)+((snd (snd x))+1)) xs p
-
-
--- Get a speed factor to increase the movements of the attackers
-getSpeedFactor :: Int -> Int -> Int
-getSpeedFactor level now = ((now*level) `quot` 50) `quot` 1000
-
-
-
-
-
-
-
-
-
-
-
-
-

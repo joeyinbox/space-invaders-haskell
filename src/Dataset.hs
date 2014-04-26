@@ -1,14 +1,17 @@
 module Dataset where
 
+import Data.Map
+
 import Graphics.UI.SDL
 import Graphics.UI.SDL.TTF.Types
-import Data.Map
+
 import Attacker
 import Bullet
 import Bunker
 import Utils
 
 
+-- State of the game used to display the right screen
 data GameState = MAIN | INGAME | GAMEOVER
 
 -- Define Game State checking
@@ -41,8 +44,10 @@ gameStateEq _         _       = False
 -- 19. spaceshipPosition
 -- 20. spaceshipDirection
 -- 21. spaceshipWorth
-type GameDataType = ((GameState, Bool, Int, Int, Int), (Int, Position), ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int), [Bullet], ([Int], [(Int, BunkerType)], [(Int, Position)], [(Int, BunkerState)]), (Bool, Position, Int, Int))
-
+type GameDataType = ((GameState, Bool, Int, Int, Int), 
+                     (Int, Position), 
+                     ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int), [Bullet], ([Int], [(Int, BunkerType)], [(Int, Position)], [(Int, BunkerState)]), 
+                     (Bool, Position, Int, Int))
 
 
 -- Retrieve informations within GameDataType
@@ -132,15 +137,7 @@ getSpaceshipWorth (_,_,_,_,_,(_,_,_,a)) = a
 
 
 
-
-
-
-
-
-
-
-
--- Need to gather all game informations within a single tuple to allow recursion calls
+-- Need to gather all app informations within a single tuple to allow recursion calls
 type AppDataType = (IO Surface, FontList, Color, SurfaceList)
 type FontList = (Font, Font, Font)
 type SurfaceList = (IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, (IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface, IO Surface), IO Surface)
@@ -201,12 +198,3 @@ eventResultEq Dataset.Quit Dataset.Quit = True
 eventResultEq Play         Play         = True
 eventResultEq None         None         = True
 eventResultEq _            _            = False
-
-
-
-
-
-
-
-
-

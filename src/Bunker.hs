@@ -1,10 +1,13 @@
 module Bunker where
 
 import Data.Map
+
 import Utils
 
--- This list store the identifier of all bunker parts
+
+-- This list stores the identifier of all bunker parts
 bunkerIdList = [1..48]
+
 
 -- Define Bunker types
 data BunkerType = TopLeft | TopRight | CenterLeft | CenterRight | Plain
@@ -17,6 +20,7 @@ bunkerTypeEq CenterLeft  CenterLeft  = True
 bunkerTypeEq CenterRight CenterRight = True
 bunkerTypeEq Plain       Plain       = True
 bunkerTypeEq _           _           = False
+
 
 -- Define Bunker state
 data BunkerState = Initial | Minor | Partial | Major | Destroyed
@@ -52,38 +56,10 @@ resetBunkerStateList :: [(Int, BunkerState)]
 resetBunkerStateList = bunkerIdList `zip` (cycle [Initial])
 
 
-
-
-
--- Return a list of tuples (Int, Position) of all undestroyed bunker
+-- Return a list of the positions of all undestroyed bunker parts
 getUndestroyedBunkerPositionList :: [(Int, BunkerState)] -> [(Int, Position)] -> [(Int, Position)]
 getUndestroyedBunkerPositionList [] _ = []
 getUndestroyedBunkerPositionList (x:xs) yys = do
     if bunkerStateEq (snd x) Destroyed
         then getUndestroyedBunkerPositionList xs yys
     else (fst x,(fromList yys ! fst x)) : getUndestroyedBunkerPositionList xs yys
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
