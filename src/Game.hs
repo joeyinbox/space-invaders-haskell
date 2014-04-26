@@ -1,5 +1,6 @@
 module Game where
 
+import Graphics.UI.SDL
 import Data.Map
 import Dataset
 import Attacker
@@ -58,152 +59,76 @@ detectGameOver positionList = do
 
 
 
--- Function called at each tick every 100ms (~10fps)
---loopOld xxs@(x:xs) gameData = do
---    -- Update informations
---    let newGameData =  -- Ids
---                       (getAttackerIdList gameData, 
---                       -- Types
---                       getAttackerTypeList gameData, 
---                       -- Positions
---                       moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
---                         (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
---                           (getAttackerPositionList gameData) 
---                           (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
---                         ) (if detectTurn                                    
---                             (getAliveAttackerPositionList                     -- Return only the positions of the attackers which are still alive
---                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
---                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
---                             ) 
---                             (getAttackerDirection gameData) then 1 else 0    -- Determine the value of the Y shift (either 0 or 1) according to the result of the previous method
---                            ), 
---                       -- Alives
---                       getAttackerAliveList gameData, 
---                       -- Direction
---                       if detectTurn                                         -- Change the direction of attackers if a turn is detected                                  
---                           (getAliveAttackerPositionList                       -- Return only the positions of the attackers which are still alive
---                               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
---                               (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
---                            )  
---                           (getAttackerDirection gameData) 
---                         then (getAttackerDirection gameData)*(-1)            -- Invert it or..
---                         else (getAttackerDirection gameData),                -- Keep the same
---                       -- Bullets
---                       getBulletList gameData)
---    
---    -- Clear the screen
---    clearScreen
---    
---    -- Display informations
---    display newGameData
---    
---    -- Sleep for 500ms (~2fps)
---    tick
---    
---    -- Loop again if the game is not over
---    if not (detectGameOver (getAttackerPositionList newGameData))
---        then loopOld xs newGameData
---    else putStrLn "Game Over"
+
+-- Mark all attackers which enter in collision with a bullet as not alive
+--keepUntouchedAttackerList :: [(Int, Bool)] -> [(Position, Int)] -> GameDataType -> AppDataType -> [(Int, Bool)]
+keepUntouchedAttackerList []     _   _ _ = []
+keepUntouchedAttackerList (x:xs) yys g a = do
+    if not (snd x)
+        then x : keepUntouchedAttackerList xs yys g a
+    else do
+        -- Determine the attacker size
+        let size = if attackerTypeEq (fromList (getAttackerTypeList g) ! (fst x)) Crab
+                        then (surfaceGetWidth (getCrabImg a), surfaceGetHeight (getCrabImg a))
+                    else if attackerTypeEq (fromList (getAttackerTypeList g) ! (fst x)) Octopus
+                        then (surfaceGetWidth (getOctopusImg a), surfaceGetHeight (getOctopusImg a))
+                    else if attackerTypeEq (fromList (getAttackerTypeList g) ! (fst x)) Squid
+                        then (surfaceGetWidth (getSquidImg a), surfaceGetHeight (getSquidImg a))
+                    else (surfaceGetWidth (getSpaceshipImg a), surfaceGetHeight (getSpaceshipImg a))
+        
+        -- Determine the attacker position
+        let pos = (fromList (getAttackerPositionList g) ! (fst x))
+    
+        -- Check if the current attacker touch any of all the bullets
+        detectTouchedAttacker x yys size pos : keepUntouchedAttackerList xs yys g a
 
 
 
--- Clear the screen
-clearScreen = do
-    repeatAction 100 (putStrLn "")
-
-
--- Display the whole game
-display gameData = do
-    -- Display the statistics
-    putStrLn "------------------------------------------------------------------------------------------------------"
-    putStrLn "| Level: X                                    Score: X                                      Lives: X |"
-    -- Fill the gap between the top and the attackers
-    repeatAction ((snd (fromList (getAttackerPositionList gameData) ! 1))-1) (putStrLn "|                                                                                                    |")
-    
-    -- Display all the attackers
-    --displayAllAttacker gameData ((concatMap (replicate 2) [1..5]) `zip` (cycle [1,2]))
-    
-    -- Fill the gap between the bottom and the attackers
-    repeatAction (33-(snd (fromList (getAttackerPositionList gameData) ! 55))) (putStrLn "|                                                                                                    |")
-    
-    
-    putStrLn "------------------------------------------------------------------------------------------------------"
-    
-    
-    --
-    --let id = 23
-    --print (getLeftBoundary (getAttackerPositionList gameData))
-    --print (getRightBoundary (getAttackerPositionList gameData))
-    --print (getDownBoundary (getAttackerPositionList gameData))
-    --print (getAttackerWorth (fromList (getAttackerTypeList gameData) ! id))
-    --print (fst (fromList (getAttackerPositionList gameData) ! id))
-    --print (snd (fromList (getAttackerPositionList gameData) ! id))
-    --
-    --if (fromList (getAttackerAliveList gameData) ! id) then
-    --    putStrLn "Still alive"
-    --else
-    --    putStrLn "Destroyed"
-    --
-    --if attackerTypeEq Crab (fromList (getAttackerTypeList gameData) ! id) then
-    --    putStrLn "It is a crab!"
-    --else
-    --    putStrLn "Not a crab.."
-    
-
-
--- Display recursively a whole line of alive attackers
-oldDisplayAttackerLine gameData [] _ = putStr ""
-oldDisplayAttackerLine gameData (x:xs) line = do
-    -- Display the attacker if it is still alive
-    let id = (((fst line)-1)*11)+x
-    
-    if (fromList (getAttackerAliveList gameData) ! id) then
-        if snd line == 1
-            then putStr (fst (getAttackerGraphic (fromList (getAttackerTypeList gameData) ! id)))
-        else if snd line == 2
-            then putStr (snd (getAttackerGraphic (fromList (getAttackerTypeList gameData) ! id)))
-        else putStr "    "
-    else
-        putStr "    "
-    
-    -- Display a margin if it is not the last attacker to process
-    if length xs > 0 
-        then putStr "   "
-    else putStr ""
-    
-    -- Loop
-    --displayAttackerLine gameData xs line
-
-
--- Display all attackers, margins and the board borders
-oldDisplayAllAttacker gameData []     = putStr ""
-oldDisplayAllAttacker gameData (x:xs) = do
-    -- Display the left border
-    putStr "|"
-    -- Display the space between the left side of a line and the first attacker alive
-    repeatAction (getLeftBoundaryPerLine (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (fst x)) (putStr " ")
-    -- Display attackers for this line
-    --displayAttackerLine gameData [1..11] x
-    -- Display the space between the right side of a line and the last attacker alive
-    repeatAction (96-(getRightBoundaryPerLine (getAliveAttackerPositionList (getAttackerAliveList gameData) (getAttackerPositionList gameData)) (fst x))) (putStr " ")
-    -- Display the right border
-    putStrLn "|"
-    
-    if snd x == 2
-        then putStrLn "|                                                                                                    |"
-    else putStr ""
-    
-    -- Loop
-    --displayAllAttacker gameData xs
-    
+-- Check if an attacker touch any of all the bullets
+detectTouchedAttacker :: (Int, Bool) -> [(Position, Int)] -> (Int, Int) -> Position -> (Int, Bool)
+detectTouchedAttacker x  []     _    _ = x
+detectTouchedAttacker x  (y:ys) size pos = do
+    -- Check if the current bullet position asserted corresponds to the position of the current attacker
+    --    bullet X   >= attacker X&&    bullet X   <=   attacker X + width   &&    bullet Y   >= attacker Y&&    bullet Y   <=  attacker Y + height
+    if (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+(fst size)) && (snd (fst y)) >= (snd pos) && (snd (fst y)) <= ((snd pos)+(snd size))
+        then (fst x, False)
+    else detectTouchedAttacker x ys size pos
 
 
 
 
-    
-    
-    
-    
-    
-    
-    
+
+-- Return the list of points available in a list of attackers
+getEarnedPoints :: [(Int, Bool)] -> [(Int, AttackerType)] -> [Int]
+getEarnedPoints []     _  = []
+getEarnedPoints (x:xs) ys = do
+    if snd x
+        then (getAttackerWorth (fromList ys ! (fst x))) : getEarnedPoints xs ys
+    else getEarnedPoints xs ys
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

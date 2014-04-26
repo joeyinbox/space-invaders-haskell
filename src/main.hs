@@ -71,11 +71,7 @@ main = withInit [InitEverything] $ do
             let appData = (screen, (fontTitle, fontMenu, fontStatus), fontColor, resourceList)
             
             -- Declare and initialise all lists of variables needed within the same element to be able to pass it recursively
-            let gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList [], resetAttackerPositionList [], resetAttackerAliveList [], resetAttackerDirection 0), [], (bunkerIdList, resetBunkerTypeList [], resetBunkerPositionList [], resetBunkerStateList []))
-            
-            
-            -- Display the main screen
-            displayMainScreen appData
+            let gameData = (hardResetGame, hardResetPlayer, (attackerIdList, resetAttackerTypeList, resetAttackerPositionList, resetAttackerAliveList, resetAttackerDirection), [], (bunkerIdList, resetBunkerTypeList, resetBunkerPositionList, resetBunkerStateList))
             
             -- Allow repeated keys
             enableKeyRepeat 10 10
@@ -130,7 +126,7 @@ loop gameData appData = do
     if gameStateEq (getGameState gameData) MAIN
         then displayMainScreen appData
     else if gameStateEq (getGameState gameData) GAMEOVER
-        then displayMainScreen appData -- TODO: display game over
+        then displayGameOverScreen gameData appData
     else displayInGameScreen gameData appData
     
     
@@ -139,49 +135,146 @@ loop gameData appData = do
     if eventResultEq result Dataset.Quit
         then putStr ""
     else do
-        -- Update all data!
-        let newGameData = ((if eventResultEq result Play then INGAME else if gameStateEq (getGameState gameData) INGAME && not (isGameActive gameData) then GAMEOVER else getGameState gameData,
-                          isGameActive gameData,
-                          getLevel gameData,
-                          getScore gameData),
-                          (getPlayerLife gameData,
-                          if eventResultEq result MoveLeft && fst (getPlayerPosition gameData) >= 5 
-                              then ((fst (getPlayerPosition gameData)-5), snd (getPlayerPosition gameData))
-                          else if eventResultEq result MoveRight && fst (getPlayerPosition gameData) <= (1019-surfaceGetWidth (getPlayerImg appData))
-                              then ((fst (getPlayerPosition gameData)+5), snd (getPlayerPosition gameData))
-                          else getPlayerPosition gameData),
-                          (getAttackerIdList gameData,
-                          getAttackerTypeList gameData,
-                          moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
-                           (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
-                             (getAttackerPositionList gameData) 
-                             (getAttackerDirection gameData)                    -- Determine the value of the X shift (either -1 or 1)
-                           ) (if detectTurn                                    
-                               (getAliveAttackerPositionList                     -- Return only the positions of the attackers which are still alive
-                                 (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
-                                 (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
-                               ) 
-                               (getAttackerDirection gameData) then 10 else 0    -- Determine the value of the Y shift (either 0 or 10) according to the result of the previous method
-                                                      ),
-                          getAttackerAliveList gameData,
-                          if detectTurn                                         -- Change the direction of attackers if a turn is detected                                  
-                              (getAliveAttackerPositionList                       -- Return only the positions of the attackers which are still alive
-                                  (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
-                                  (getAttackerPositionList gameData)                 -- The method getAliveAttackerPositionList needs the position list
-                               )  
-                              (getAttackerDirection gameData) 
-                            then (getAttackerDirection gameData)*(-1)            -- Invert it or..
-                            else (getAttackerDirection gameData)),                -- Keep the same
-                          getBulletList gameData,
-                          (getBunkerIdList gameData,
-                          getBunkerTypeList gameData,
-                          getBunkerPositionList gameData,
-                          getBunkerStateList gameData))
-        let newAppData = appData
+        -- Update all game data!
+        let newGameData = ((updateGameState result gameData,
+                            updateGameActive result gameData,
+                            updateLevel result gameData,
+                            updateScore result gameData appData),
+                           (updatePlayerLife result gameData appData,
+                            updatePlayerPosition result gameData appData),
+                           (getAttackerIdList gameData,                          -- TODO: useless to keep as there is already the global one?
+                            getAttackerTypeList gameData,
+                            updateAttackerPosition result gameData,
+                            updateAttackerAliveList result gameData appData,
+                            updateAttackerDirection result gameData),
+                           updateBulletList result gameData appData,
+                           (getBunkerIdList gameData,                            -- TODO: useless to keep as there is already the global one?
+                            getBunkerTypeList gameData,
+                            getBunkerPositionList gameData,
+                            updateBunkerStateList result gameData))
         
         
         -- Call the loop
-        loop newGameData newAppData
+        loop newGameData appData
+
+
+
+
+updateGameState result gameData = do
+    if eventResultEq result Play 
+        then INGAME 
+    else if gameStateEq (getGameState gameData) INGAME && not (isGameActive gameData) 
+        then GAMEOVER 
+    else getGameState gameData
+
+
+updateGameActive result gameData = do
+    if eventResultEq result Play 
+        then True
+    else if gameStateEq (getGameState gameData) MAIN || gameStateEq (getGameState gameData) GAMEOVER
+        then False
+    else if (getPlayerLife gameData) <= 0
+        then False
+    else True
+
+
+updateLevel result gameData = do
+    if eventResultEq result Play 
+        then 1
+    else if length (getAliveAttackerList (getAttackerAliveList gameData)) == 0
+        then (getLevel gameData)+1
+    else getLevel gameData
+
+
+updateScore result gameData appData = do
+    if eventResultEq result Play 
+        then 0
+    else do
+        -- Get the total of point remaining before and currently
+        let former = sum (getEarnedPoints (getAttackerAliveList gameData) (getAttackerTypeList gameData))
+        let current = sum (getEarnedPoints (keepUntouchedAttackerList (getAttackerAliveList gameData) (getBulletList gameData) gameData appData) (getAttackerTypeList gameData))
+        
+        -- Return the new score
+        (getScore gameData)+(former-current)
+    
+
+updatePlayerLife result gameData appData = do
+    if eventResultEq result Play 
+        then 3
+    else getPlayerLife gameData
+    -- TODO: detect collision between bullet and player
+    
+
+updatePlayerPosition result gameData appData = do
+    if eventResultEq result Play 
+        then (190, 0)
+    else if eventResultEq result MoveLeft && fst (getPlayerPosition gameData) >= 5 
+        then ((fst (getPlayerPosition gameData)-5), snd (getPlayerPosition gameData))
+    else if eventResultEq result MoveRight && fst (getPlayerPosition gameData) <= (1019-surfaceGetWidth (getPlayerImg appData))
+        then ((fst (getPlayerPosition gameData)+5), snd (getPlayerPosition gameData))
+    else getPlayerPosition gameData
+
+
+updateAttackerPosition result gameData = do
+    if eventResultEq result Play 
+        then resetAttackerPositionList
+    else moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
+           (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
+             (getAttackerPositionList gameData)                      -- The list on which the shift will be applied
+             (getAttackerDirection gameData))                         -- Determine the value of the X shift (either -1 or 1) 
+           (if detectTurn                                          -- Return True if the attackers reached the game limits
+               (getAliveAttackerPositionList                            -- Return only the positions of the attackers which are still alive
+                 (getAttackerAliveList gameData)                          -- The method getAliveAttackerPositionList needs the alive list
+                 (getAttackerPositionList gameData))                      -- The method getAliveAttackerPositionList needs the position list
+               (getAttackerDirection gameData)                            -- Determine the value of the X shift (either -1 or 1) 
+               then 10 else 0)                                          -- Determine the value of the Y shift (either 0 or 10) according to the result of the previous method
+
+
+updateAttackerAliveList result gameData appData = do
+    if eventResultEq result Play 
+        then resetAttackerAliveList
+    else keepUntouchedAttackerList (getAttackerAliveList gameData) (getBulletList gameData) gameData appData
+
+
+-- Change the direction of attackers if a turn is detected     
+updateAttackerDirection result gameData = do
+    if eventResultEq result Play 
+        then resetAttackerDirection
+    else if detectTurn
+           (getAliveAttackerPositionList                        -- Return only the positions of the attackers which are still alive
+               (getAttackerAliveList gameData)                    -- The method getAliveAttackerPositionList needs the alive list
+               (getAttackerPositionList gameData))                -- The method getAliveAttackerPositionList needs the position list
+           (getAttackerDirection gameData) 
+         then (getAttackerDirection gameData)*(-1)            -- Invert it or..
+    else (getAttackerDirection gameData)                      -- Keep the same
+
+
+updateBulletList result gameData appData = do
+    -- First, update all bullet positions
+    let newBulletList = checkBulletPosition (updateBulletPosition (getBulletList gameData)) (surfaceGetHeight (getBulletImg appData))
+    
+    -- Then, check if the player wants to shoot
+    if eventResultEq result Shoot 
+        then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1)
+    else newBulletList
+
+
+updateBunkerStateList result gameData = do
+    if eventResultEq result Play 
+        then resetBunkerStateList
+    else getBunkerStateList gameData
+    -- TODO: detect collision between bullet and bunker
+
+
+
+
+
+
+
+
+
+
+
 
 
 -- Display the main screen elements
@@ -237,15 +330,15 @@ displayInGameScreen gameData appData = do
     
 	-- Display the status
 	-- Level
-    txt <- renderTextSolid (getFontStatus appData) "LEVEL: XX" (getFontColor appData)
+    txt <- renderTextSolid (getFontStatus appData) ("LEVEL: " ++ (show (getLevel gameData))) (getFontColor appData)
     applySurface 20 20 txt (getScreen appData)
 	
 	-- Score
-    txt <- renderTextSolid (getFontStatus appData) "SCORE: XX" (getFontColor appData)
-    applySurface 450 20 txt (getScreen appData)
+    txt <- renderTextSolid (getFontStatus appData) ("SCORE: " ++ (show (getScore gameData))) (getFontColor appData)
+    applySurface (512-((surfaceGetWidth txt) `quot` 2)) 20 txt (getScreen appData)
 	
 	-- Life
-    txt <- renderTextSolid (getFontStatus appData) "LIFE: XX" (getFontColor appData)
+    txt <- renderTextSolid (getFontStatus appData) ("LIFE: " ++ (show (getPlayerLife gameData))) (getFontColor appData)
     applySurface (1004-surfaceGetWidth txt) 20 txt (getScreen appData)
 	
 	
@@ -257,7 +350,8 @@ displayInGameScreen gameData appData = do
     -- Draw all bunkers
     displayBunker (getBunkerTypeList gameData) (getBunkerStateList gameData) appData (getBunkerPositionList gameData)
     
-    -- TODO: Draw the bullets
+    -- Draw the bullets
+    displayBullet (getBulletList gameData) appData
     
     -- Draw the player
     applySurface (fst (getPlayerPosition gameData)) (755-(surfaceGetHeight (getPlayerImg appData))) (getPlayerImg appData) (getScreen appData)
@@ -267,6 +361,43 @@ displayInGameScreen gameData appData = do
 	
 	-- Refresh the screen to show all elements
     Graphics.UI.SDL.flip (getScreen appData)
+
+
+
+
+-- Display the game over screen elements
+displayGameOverScreen gameData appData = do
+    -- Display the background
+    applySurface 0 0 (getBackgroundImg appData) (getScreen appData)
+    
+    -- Display the main title
+    txt <- renderTextSolid (getFontTitle appData) "GAME OVER" (getFontColor appData)
+    applySurface (512-((surfaceGetWidth txt) `quot` 2)) 100 txt (getScreen appData)
+	
+	
+	-- Display the final score
+    txt <- renderTextSolid (getFontMenu appData) "*FINAL SCORE*" (getFontColor appData)
+    applySurface (512-((surfaceGetWidth txt) `quot` 2)) 250 txt (getScreen appData)
+	
+	-- Display the score
+    txt <- renderTextSolid (getFontMenu appData) ((show (getScore gameData))++" POINTS") (getFontColor appData)
+    applySurface (512-((surfaceGetWidth txt) `quot` 2)) 330 txt (getScreen appData)
+	
+	-- Display the level
+    txt <- renderTextSolid (getFontMenu appData) ("LEVEL: "++(show (getLevel gameData))) (getFontColor appData)
+    applySurface (512-((surfaceGetWidth txt) `quot` 2)) 390 txt (getScreen appData)
+	
+	
+	-- Display the instructions
+    txt <- renderTextSolid (getFontMenu appData) "PRESS ENTER TO PLAY AGAIN" (getFontColor appData)
+    applySurface (512-((surfaceGetWidth txt) `quot` 2)) 700 txt (getScreen appData)
+	
+	-- Refresh the screen to show all elements
+    Graphics.UI.SDL.flip (getScreen appData)
+
+
+
+
 
 
 
@@ -343,10 +474,23 @@ displayBunker bunkerTypeList bunkerStateList appData (x:xs) = do
              else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
     else applySurface (fst (snd x)) (snd (snd x)) (getBunkerDestroyedImg appData) (getScreen appData)
     
-    
-    
     -- Loop
     displayBunker bunkerTypeList bunkerStateList appData xs
+
+
+-- Display all bullets
+displayBullet []         appData = putStr ""
+displayBullet (x:xs) appData = do
+    applySurface (fst (fst x)) (snd (fst x)) (getBulletImg appData) (getScreen appData)
+    
+    -- Loop
+    displayBullet xs appData
+    
+
+
+
+
+
 
 
 

@@ -1,5 +1,6 @@
 module Attacker where
 
+import Data.Map
 import Utils
 
 
@@ -17,22 +18,6 @@ attackerTypeEq Squid     Squid     = True
 attackerTypeEq Spaceship Spaceship = True
 attackerTypeEq _         _         = False
 
--- Define Graphic type (line1, line2)
-type Graphic = ([Char], [Char])
-
--- Return the graphic lines of an Attacker type
-getAttackerGraphic :: AttackerType -> Graphic
-getAttackerGraphic t = do
-    if attackerTypeEq Crab t 
-        then ("/MM\\", "\\~~/")
-    else if attackerTypeEq Octopus t 
-        then ("/ÒÓ\\", " \\/ ")
-    else if attackerTypeEq Squid t 
-        then ("oÔo ", "^ ^ ")
-    else if attackerTypeEq Spaceship t 
-        then ("/***\\", "^‾^‾^")
-    else ("", "")
-
 
 -- Return the worth value of an Attacker type
 -- For now, the value of the spaceship is fixed because of IO limitations (use of MonadRandom package?)
@@ -49,17 +34,34 @@ getAttackerWorth t = do
     else 0
 
 
+-- Return a list of all alive attackers
+getAliveAttackerList :: [(Int, Bool)] -> [Int]
+getAliveAttackerList [] = []
+getAliveAttackerList (x:xs) = do
+    if snd x
+        then fst x : getAliveAttackerList xs
+    else getAliveAttackerList xs
+
+-- Return a list of tuples (Int, Position) of all alive attackers
+getAliveAttackerPositionList :: [(Int, Bool)] -> [(Int, Position)] -> [(Int, Position)]
+getAliveAttackerPositionList [] _ = []
+getAliveAttackerPositionList (x:xs) yys = do
+    if snd x
+        then (fst x,(fromList yys ! fst x)) : getAliveAttackerPositionList xs yys
+    else getAliveAttackerPositionList xs yys
+
+
 -- (re-)Initialise the list of attacker types
-resetAttackerTypeList :: [(Int, AttackerType)] -> [(Int, AttackerType)]
-resetAttackerTypeList _ = merge ([1..11] `zip` (cycle [Squid])) (merge ([12..33] `zip` (cycle [Crab])) ([34..55] `zip` (cycle [Octopus])))
+resetAttackerTypeList :: [(Int, AttackerType)]
+resetAttackerTypeList = merge ([1..11] `zip` (cycle [Squid])) (merge ([12..33] `zip` (cycle [Crab])) ([34..55] `zip` (cycle [Octopus])))
 
 -- (re-)Initialise the list indicating if the attackers are still alive
-resetAttackerAliveList :: [(Int, Bool)] -> [(Int, Bool)]
-resetAttackerAliveList _ = attackerIdList `zip` (cycle [True])
+resetAttackerAliveList :: [(Int, Bool)]
+resetAttackerAliveList = attackerIdList `zip` (cycle [True])
 
 -- (re-)Initialise the list of attackers position
-resetAttackerPositionList :: [(Int, Position)] -> [(Int, Position)]
-resetAttackerPositionList _ = do
+resetAttackerPositionList :: [(Int, Position)]
+resetAttackerPositionList = do
     -- Horizontal positions
     let x = (Prelude.map (+90) (Prelude.map (*60) [1..11])) ++ (Prelude.map (+85) (take 44 (cycle (Prelude.map (*60) [1..11]))))
 
@@ -70,8 +72,8 @@ resetAttackerPositionList _ = do
     attackerIdList `zip` (addPosition x y)
 
 -- (re-)Initialise attackers direction
-resetAttackerDirection :: Int -> Int
-resetAttackerDirection _ = 1
+resetAttackerDirection :: Int
+resetAttackerDirection = 1
 
 -- Shift all X positions by a given number
 moveAttackerSide :: [(Int, Position)] -> Int -> [(Int, Position)]

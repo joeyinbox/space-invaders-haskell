@@ -31,12 +31,12 @@ bunkerStateEq _         _         = False
 
 
 -- (re-)Initialise the list of bunker types
-resetBunkerTypeList :: [(Int, BunkerType)] -> [(Int, BunkerType)]
-resetBunkerTypeList _ = bunkerIdList `zip` (take 48 (cycle ([TopLeft, Plain, Plain, TopRight, Plain, Plain, Plain, Plain, Plain, CenterLeft, CenterRight, Plain])))
+resetBunkerTypeList :: [(Int, BunkerType)]
+resetBunkerTypeList = bunkerIdList `zip` (take 48 (cycle ([TopLeft, Plain, Plain, TopRight, Plain, Plain, Plain, Plain, Plain, CenterLeft, CenterRight, Plain])))
 
 -- (re-)Initialise the list of bunker positions
-resetBunkerPositionList :: [(Int, Position)] -> [(Int, Position)]
-resetBunkerPositionList _ = do
+resetBunkerPositionList :: [(Int, Position)]
+resetBunkerPositionList = do
     -- Horizontal positions
     let x =  (take 12 (cycle ([170, 194, 218, 242]))) ++ (take 12 (cycle ([366, 390, 414, 438]))) ++ (take 12 (cycle ([562, 586, 610, 634]))) ++ (take 12 (cycle ([758, 782, 806, 830])))
 
@@ -47,5 +47,5 @@ resetBunkerPositionList _ = do
     bunkerIdList `zip` (addPosition x y)
 
 -- (re-)Initialise the list of bunker states
-resetBunkerStateList :: [(Int, BunkerState)] -> [(Int, BunkerState)]
-resetBunkerStateList _ = bunkerIdList `zip` (cycle [Initial])
+resetBunkerStateList :: [(Int, BunkerState)]
+resetBunkerStateList = bunkerIdList `zip` (cycle [Initial])

@@ -110,13 +110,7 @@ getBunkerStateList (_,_,_,_,(_,_,_,a)) = a
 
 
 
--- Return a list of tuples (Int, Position) of all alive attackers
-getAliveAttackerPositionList :: [(Int, Bool)] -> [(Int, Position)] -> [(Int, Position)]
-getAliveAttackerPositionList [] _ = []
-getAliveAttackerPositionList (x:xs) yys = do
-    if snd x
-        then (fst x,(fromList yys ! fst x)) : getAliveAttackerPositionList xs yys
-    else getAliveAttackerPositionList xs yys
+
 
 
 
@@ -168,7 +162,7 @@ getBaselineImg (_,_,_,(_,_,_,_,_,_,_,_,a)) = a
 
 -- Hard Reset Game informations
 hardResetGame :: (GameState, Bool, Int, Int)
-hardResetGame = (MAIN, True, 1, 0)
+hardResetGame = (MAIN, False, 1, 0)
 
 
 -- Define Event result type
