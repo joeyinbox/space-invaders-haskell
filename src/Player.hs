@@ -4,4 +4,4 @@ import Utils
 
 -- Hard Reset Player informations
 hardResetPlayer :: (Int, Position)
-hardResetPlayer = (3, (190, 0))
+hardResetPlayer = (3, (190, 727))

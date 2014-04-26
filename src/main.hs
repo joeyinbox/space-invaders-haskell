@@ -201,13 +201,14 @@ updateScore result gameData appData = do
 updatePlayerLife result gameData appData = do
     if eventResultEq result Play 
         then 3
+    else if detectTouchedPlayer (getPlayerPosition gameData) (getBulletList gameData) (surfaceGetWidth (getPlayerImg appData), surfaceGetHeight (getPlayerImg appData))
+        then (getPlayerLife gameData)-1
     else getPlayerLife gameData
-    -- TODO: detect collision between bullet and player
     
 
 updatePlayerPosition result gameData appData = do
     if eventResultEq result Play 
-        then (190, 0)
+        then (190, 727)
     else if eventResultEq result MoveLeft && fst (getPlayerPosition gameData) >= 5 
         then ((fst (getPlayerPosition gameData)-5), snd (getPlayerPosition gameData))
     else if eventResultEq result MoveRight && fst (getPlayerPosition gameData) <= (1019-surfaceGetWidth (getPlayerImg appData))
@@ -250,8 +251,26 @@ updateAttackerDirection result gameData = do
 
 
 updateBulletList result gameData appData = do
-    -- First, update all bullet positions
-    let newBulletList = checkBulletPosition (updateBulletPosition (getBulletList gameData)) (surfaceGetHeight (getBulletImg appData))
+    -- First, update all bullet positions on a restrained list of unexploded bullets
+    let newBulletList = checkBulletPosition 
+                          (updateBulletPosition 
+                            (keepUnexplodedBulletListOnBunkerList 
+                              (keepUnexplodedBulletListOnAttackerList 
+                                (keepUnexplodedBulletListOnPlayer 
+                                  (getPlayerPosition gameData) 
+                                  (getBulletList gameData) 
+                                  (surfaceGetWidth 
+                                    (getPlayerImg appData), surfaceGetHeight (getPlayerImg appData))) 
+                                (getAliveAttackerPositionList 
+                                  (getAttackerAliveList gameData) 
+                                  (getAttackerPositionList gameData)) 
+                                gameData 
+                                appData) 
+                              (getUndestroyedBunkerPositionList 
+                                (getBunkerStateList gameData) 
+                                (getBunkerPositionList gameData)))) 
+                            (surfaceGetHeight (getBulletImg appData))
+    
     
     -- Then, check if the player wants to shoot
     if eventResultEq result Shoot 
@@ -262,8 +281,8 @@ updateBulletList result gameData appData = do
 updateBunkerStateList result gameData = do
     if eventResultEq result Play 
         then resetBunkerStateList
-    else getBunkerStateList gameData
-    -- TODO: detect collision between bullet and bunker
+    else affectBunkerStateList (getBunkerStateList gameData) (getBunkerPositionList gameData) (getBulletList gameData)
+
 
 
 
