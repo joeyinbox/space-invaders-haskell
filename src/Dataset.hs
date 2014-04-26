@@ -26,17 +26,18 @@ gameStateEq _         _       = False
 -- 4.  score
 -- 5.  player life
 -- 6.  player position
--- 7.  list of attacker identifiers
--- 8.  list of attacker types
--- 9.  list of attacker positions
--- 10. list of attacker state (alive or not)
--- 11. direction of the attackers
--- 12. list of bullets
--- 13. list of bunker part identifiers
--- 14. list of bunker part types
--- 15. list of bunker part positions
--- 16. list of bunker part state
-type GameDataType = ((GameState, Bool, Int, Int), (Int, Position), ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int), [Bullet], ([Int], [(Int, BunkerType)], [(Int, Position)], [(Int, BunkerState)]))
+-- 7.  player current bullet
+-- 8.  list of attacker identifiers
+-- 9.  list of attacker types
+-- 10. list of attacker positions
+-- 11. list of attacker state (alive or not)
+-- 12. direction of the attackers
+-- 13. list of bullets
+-- 14. list of bunker part identifiers
+-- 15. list of bunker part types
+-- 16. list of bunker part positions
+-- 17. list of bunker part state
+type GameDataType = ((GameState, Bool, Int, Int), (Int, Position, Int), ([Int], [(Int, AttackerType)], [(Int, Position)], [(Int, Bool)], Int), [Bullet], ([Int], [(Int, BunkerType)], [(Int, Position)], [(Int, BunkerState)]))
 
 
 
@@ -59,11 +60,15 @@ getScore ((_,_,_,a),_,_,_,_) = a
 
 -- Get the player remaining lives count
 getPlayerLife :: GameDataType -> Int
-getPlayerLife (_,(a,_),_,_,_) = a
+getPlayerLife (_,(a,_,_),_,_,_) = a
 
 -- Get the player position
 getPlayerPosition :: GameDataType -> Position
-getPlayerPosition (_,(_,a),_,_,_) = a
+getPlayerPosition (_,(_,a,_),_,_,_) = a
+
+-- Get the player current bullet
+getPlayerBullet :: GameDataType -> Int
+getPlayerBullet (_,(_,_,a),_,_,_) = a
 
 -- Get the list of attacker identifiers
 getAttackerIdList :: GameDataType -> [Int]

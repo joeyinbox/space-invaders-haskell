@@ -141,7 +141,8 @@ loop gameData appData = do
                             updateLevel result gameData,
                             updateScore result gameData appData),
                            (updatePlayerLife result gameData appData,
-                            updatePlayerPosition result gameData appData),
+                            updatePlayerPosition result gameData appData,
+                            updatePlayerBullet gameData),
                            (getAttackerIdList gameData,                          -- TODO: useless to keep as there is already the global one?
                             getAttackerTypeList gameData,
                             updateAttackerPosition result gameData,
@@ -216,6 +217,10 @@ updatePlayerPosition result gameData appData = do
     else getPlayerPosition gameData
 
 
+updatePlayerBullet gameData = do
+    (getPlayerBullet gameData)
+
+
 updateAttackerPosition result gameData = do
     if eventResultEq result Play 
         then resetAttackerPositionList
@@ -272,9 +277,9 @@ updateBulletList result gameData appData = do
                             (surfaceGetHeight (getBulletImg appData))
     
     
-    -- Then, check if the player wants to shoot
-    if eventResultEq result Shoot 
-        then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1)
+    -- Then, check if the player wants to shoot and can do it
+    if eventResultEq result Shoot && not (isPlayerBulletStillActive (getBulletList gameData))
+        then addBullet newBulletList ((fst (getPlayerPosition gameData))+((surfaceGetWidth (getPlayerImg appData)) `quot` 2), (755-(surfaceGetHeight (getPlayerImg appData)))) (-1) True
     else newBulletList
 
 

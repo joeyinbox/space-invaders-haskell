@@ -62,7 +62,7 @@ detectGameOver positionList = do
 
 
 -- Mark all attackers which enter in collision with a bullet as not alive
---keepUntouchedAttackerList :: [(Int, Bool)] -> [(Position, Int)] -> GameDataType -> AppDataType -> [(Int, Bool)]
+--keepUntouchedAttackerList :: [(Int, Bool)] -> [(Position, (Int, Bool))] -> GameDataType -> AppDataType -> [(Int, Bool)]
 keepUntouchedAttackerList []     _   _ _ = []
 keepUntouchedAttackerList (x:xs) yys g a = do
     if not (snd x)
@@ -86,7 +86,7 @@ keepUntouchedAttackerList (x:xs) yys g a = do
 
 
 -- Check if an attacker touch any of all the bullets
-detectTouchedAttacker :: (Int, Bool) -> [(Position, Int)] -> (Int, Int) -> Position -> (Int, Bool)
+detectTouchedAttacker :: (Int, Bool) -> [(Position, (Int, Bool))] -> (Int, Int) -> Position -> (Int, Bool)
 detectTouchedAttacker x  []     _    _ = x
 detectTouchedAttacker x  (y:ys) size pos = do
     -- Check if the current bullet position asserted corresponds to the position of the current attacker
@@ -109,19 +109,19 @@ getEarnedPoints (x:xs) ys = do
 
 
 -- Update the state of the parts of all bunkers if they touch a bullet
-affectBunkerStateList :: [(Int, BunkerState)] -> [(Int, Position)] -> [(Position, Int)] -> [(Int, BunkerState)]
+affectBunkerStateList :: [(Int, BunkerState)] -> [(Int, Position)] -> [(Position, (Int, Bool))] -> [(Int, BunkerState)]
 affectBunkerStateList []     _  _  = []
 affectBunkerStateList (x:xs) zs ys = affectBunkerState x ys (fromList zs ! (fst x)) : affectBunkerStateList xs zs ys
 
 
 -- Update the state of one part of a bunker if it is touched by any of the bullet of the list
-affectBunkerState :: (Int, BunkerState) -> [(Position, Int)] -> Position -> (Int, BunkerState)
+affectBunkerState :: (Int, BunkerState) -> [(Position, (Int, Bool))] -> Position -> (Int, BunkerState)
 affectBunkerState x []     _   = x
 affectBunkerState x (y:ys) pos = do
     -- Check if the current bullet position asserted corresponds to the position of the current bunker
     --   UP or DOWN         bullet X   >= bunker X  &&    bullet X   <=  bunker X + width &&  bullet Y  >= bunker Y  &&    bullet Y   <=  bunker Y + height
-    if (snd y == (-1) && (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+24) && (snd (fst y)) >= (snd pos) && (snd (fst y)) <= ((snd pos)+24)) || 
-       (snd y == (1) && (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+24) && ((snd (fst y))+18) >= (snd pos) && ((snd (fst y))+18) <= ((snd pos)+24))
+    if (fst (snd y) == (-1) && (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+24) && (snd (fst y)) >= (snd pos) && (snd (fst y)) <= ((snd pos)+24)) || 
+       (fst (snd y) == (1) && (fst (fst y)) >= (fst pos) && (fst (fst y)) <= ((fst pos)+24) && ((snd (fst y))+18) >= (snd pos) && ((snd (fst y))+18) <= ((snd pos)+24))
         then do
             if bunkerStateEq (snd x) Initial
                 then (fst x, Minor)
@@ -137,12 +137,12 @@ affectBunkerState x (y:ys) pos = do
 
 
 -- Check if the player is touched by any of all the bullets
-detectTouchedPlayer :: Position -> [(Position, Int)] -> (Int, Int) -> Bool
+detectTouchedPlayer :: Position -> [(Position, (Int, Bool))] -> (Int, Int) -> Bool
 detectTouchedPlayer x  []     _    = False
 detectTouchedPlayer x  (y:ys) size = do
     -- Check if the current bullet position asserted corresponds to the position of the player
     --    bullet X   >= player X  &&    bullet X   <=   player X + width     &&    bullet Y   >= player Y  &&    bullet Y   <=  player Y + height
-    if snd y == 1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
+    if fst (snd y) == 1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
         then True
     else detectTouchedPlayer x ys size
 
@@ -162,7 +162,7 @@ keepUnexplodedBulletListOnAttackerList (x:xs) yys g a = (keepUnexplodedBulletLis
 
 
 -- Keep the bullet only if it hasn't exploded on any of the list of attackers
---keepUnexplodedBulletListOnAttacker :: (Position, Int) -> [(Int, Position)] -> GameDataType -> AppDataType -> [(Position, Int)]
+--keepUnexplodedBulletListOnAttacker :: (Position, (Int, Bool)) -> [(Int, Position)] -> GameDataType -> AppDataType -> [(Position, (Int, Bool))]
 keepUnexplodedBulletListOnAttacker x  []     _ _ = [x]
 keepUnexplodedBulletListOnAttacker x  (y:ys) g a = do
     -- Determine the attacker size
@@ -190,13 +190,13 @@ keepUnexplodedBulletListOnBunkerList (x:xs) yys = (keepUnexplodedBulletListOnBun
 
 
 -- Keep the bullet only if it hasn't exploded on any of the list of bunkers
---keepUnexplodedBulletListOnBunker :: (Position, Int) -> [(Int, Position)] -> [(Position, Int)]
+--keepUnexplodedBulletListOnBunker :: (Position, (Int, Bool)) -> [(Int, Position)] -> [(Position, (Int, Bool))]
 keepUnexplodedBulletListOnBunker x  []     = [x]
 keepUnexplodedBulletListOnBunker x  (y:ys) = do
     -- Check if the current bullet position asserted corresponds to the position of the current bunker
     --   UP or DOWN         bullet X   >= bunker X  &&    bullet X   <=  bunker X + width &&  bullet Y  >= bunker Y  &&    bullet Y   <=  bunker Y + height
-    if (snd x == (-1) && (fst (fst x)) >= (fst (snd y)) && (fst (fst x)) <= ((fst (snd y))+24) && (snd (fst x)) >= (snd (snd y)) && (snd (fst x)) <= ((snd (snd y))+24)) || 
-       (snd x == (1) && (fst (fst x)) >= (fst (snd y)) && (fst (fst x)) <= ((fst (snd y))+24) && ((snd (fst x))+18) >= (snd (snd y)) && ((snd (fst x))+18) <= ((snd (snd y))+24))
+    if (fst (snd x) == (-1) && (fst (fst x)) >= (fst (snd y)) && (fst (fst x)) <= ((fst (snd y))+24) && (snd (fst x)) >= (snd (snd y)) && (snd (fst x)) <= ((snd (snd y))+24)) || 
+       (fst (snd x) == (1) && (fst (fst x)) >= (fst (snd y)) && (fst (fst x)) <= ((fst (snd y))+24) && ((snd (fst x))+18) >= (snd (snd y)) && ((snd (fst x))+18) <= ((snd (snd y))+24))
         then []
     else keepUnexplodedBulletListOnBunker x ys
 
@@ -206,13 +206,19 @@ keepUnexplodedBulletListOnBunker x  (y:ys) = do
 keepUnexplodedBulletListOnPlayer x []     _    = []
 keepUnexplodedBulletListOnPlayer x (y:ys) size = do
     -- Check if the current bullet position asserted corresponds to the position of the player
-    --    bullet X   >= player X  &&    bullet X   <=   player X + width     &&    bullet Y   >= player Y  &&    bullet Y   <=  player Y + height
-    if snd y == 1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
+    --      DOWN        &&   bullet X   >= player X  &&    bullet X   <=   player X + width     &&    bullet Y   >= player Y  &&    bullet Y   <=  player Y + height
+    if fst (snd y) == 1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
         then [] -- remove all bullets as the player has been touched
     else y : keepUnexplodedBulletListOnPlayer x ys size
 
 
-
+-- Verify if the player bullet is still active to allow him to shoot again
+isPlayerBulletStillActive :: [(Position, (Int, Bool))] -> Bool
+isPlayerBulletStillActive [] = False
+isPlayerBulletStillActive (y:ys) = do
+    if snd (snd y)
+        then True
+    else isPlayerBulletStillActive ys
 
 
 
