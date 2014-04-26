@@ -141,10 +141,23 @@ detectTouchedPlayer :: Position -> [(Position, (Int, Bool))] -> (Int, Int) -> Bo
 detectTouchedPlayer x  []     _    = False
 detectTouchedPlayer x  (y:ys) size = do
     -- Check if the current bullet position asserted corresponds to the position of the player
-    --    bullet X   >= player X  &&    bullet X   <=   player X + width     &&    bullet Y   >= player Y  &&    bullet Y   <=  player Y + height
+    --    DOWN                bullet X   >= player X  &&    bullet X   <=   player X + width     &&    bullet Y   >= player Y  &&    bullet Y   <=  player Y + height
     if fst (snd y) == 1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
         then True
     else detectTouchedPlayer x ys size
+
+
+-- Check if the spaceship is touched by any of all the bullets
+detectTouchedSpaceship :: Position -> [(Position, (Int, Bool))] -> Bool -> (Int, Int) -> Bool
+detectTouchedSpaceship x  []     _      _    = False
+detectTouchedSpaceship x  (y:ys) active size = do
+    if not active
+        then False
+    -- Check if the current bullet position asserted corresponds to the position of the player
+    --             UP              bullet X   >= spaceship X  && bullet X  <=  spaceship X + width &&    bullet Y  >= spaceship Y &&  bullet Y <=  spaceship Y + height
+    else if fst (snd y) == -1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
+        then True
+    else detectTouchedSpaceship x ys active size
 
 
 
@@ -212,6 +225,22 @@ keepUnexplodedBulletListOnPlayer x (y:ys) size = do
     else y : keepUnexplodedBulletListOnPlayer x ys size
 
 
+
+-- Keep only unexploded bullets facing the spaceship
+keepUnexplodedBulletListOnSpaceship x []     _      _    = []
+keepUnexplodedBulletListOnSpaceship x yys@(y:ys) active size = do
+    if not active
+        then yys
+    -- Check if the current bullet position asserted corresponds to the position of the spaceship
+    --             UP              bullet X   >= spaceship X  && bullet X  <=  spaceship X + width &&    bullet Y  >= spaceship Y &&  bullet Y <=  spaceship Y + height
+    else if fst (snd y) == -1 && (fst (fst y)) >= (fst x) && (fst (fst y)) <= ((fst x)+(fst size)) && (snd (fst y)) >= (snd x) && (snd (fst y)) <= ((snd x)+(snd size))
+        then keepUnexplodedBulletListOnSpaceship x ys active size -- Remove this bullet
+    else y : keepUnexplodedBulletListOnSpaceship x ys active size
+
+
+
+
+
 -- Verify if the player bullet is still active to allow him to shoot again
 isPlayerBulletStillActive :: [(Position, (Int, Bool))] -> Bool
 isPlayerBulletStillActive [] = False
@@ -222,12 +251,11 @@ isPlayerBulletStillActive (y:ys) = do
 
 
 -- Generate a fake random number based on game data
-generateRandomNumber :: [(Int, Position)] -> Position -> Int
-generateRandomNumber xxs p = go 42 xxs p
+generateRandomNumber :: [(Int, Position)] -> Position -> Int -> Int
+generateRandomNumber xxs p r = go r xxs p
     where
         go s []     p = (s+1337)
         go s (x:xs) p = go (s+(fst p)+((fst x)+1)+((fst (snd x))+1)+((snd (snd x))+1)) xs p
-
 
 
 
