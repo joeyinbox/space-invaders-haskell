@@ -243,12 +243,14 @@ updateAttackerPosition result gameData = do
     else moveAttackerDown                                       -- Apply an eventuel shift over attackers' Y position
            (moveAttackerSide                                       -- Apply an eventuel shift over attackers' X position
              (getAttackerPositionList gameData)                      -- The list on which the shift will be applied
-             (getAttackerDirection gameData))                         -- Determine the value of the X shift (either -1 or 1) 
+             ((getAttackerDirection gameData)*(1+getSpeedFactor      -- Determine the value of the X shift (either -1 or 1 by default) 
+               (getLevel gameData) (getTimestamp gameData))))          -- But the value is increased by the speed factor
            (if detectTurn                                          -- Return True if the attackers reached the game limits
                (getAliveAttackerPositionList                            -- Return only the positions of the attackers which are still alive
                  (getAttackerAliveList gameData)                          -- The method getAliveAttackerPositionList needs the alive list
                  (getAttackerPositionList gameData))                      -- The method getAliveAttackerPositionList needs the position list
-               (getAttackerDirection gameData)                            -- Determine the value of the X shift (either -1 or 1) 
+               ((getAttackerDirection gameData)*(1+getSpeedFactor      -- Determine the value of the X shift (either -1 or 1 by default) 
+                 (getLevel gameData) (getTimestamp gameData)))          -- But the value is increased by the speed factor
                then 10 else 0)                                          -- Determine the value of the Y shift (either 0 or 10) according to the result of the previous method
 
 

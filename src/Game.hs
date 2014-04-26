@@ -45,9 +45,9 @@ getDownBoundary (x:xs) = go (snd (snd x)) xs
 -- Detect if attackers need to turn
 detectTurn :: [(Int, Position)] -> Int -> Bool
 detectTurn positionList direction = do
-    if direction == -1 && (getLeftBoundary positionList) == 1
+    if direction <= -1 && (getLeftBoundary positionList) <= 1
         then True
-    else if direction == 1 && (getRightBoundary positionList) == 976
+    else if direction >= 1 && (getRightBoundary positionList) >= 976
         then True
     else False
 
@@ -256,6 +256,11 @@ generateRandomNumber xxs p r = go r xxs p
     where
         go s []     p = (s+1337)
         go s (x:xs) p = go (s+(fst p)+((fst x)+1)+((fst (snd x))+1)+((snd (snd x))+1)) xs p
+
+
+-- Get a speed factor to increase the movements of the attackers
+getSpeedFactor :: Int -> Int -> Int
+getSpeedFactor level now = ((now*level) `quot` 50) `quot` 1000
 
 
 
