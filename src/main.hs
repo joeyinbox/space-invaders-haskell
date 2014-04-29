@@ -121,8 +121,8 @@ handleEvents gameData = do
 
 -- The actual loop function keeping the game running until the user decide to quit
 loop gameData appData = do
-    -- Pause the app for 30ms (~33 fps)
-    delay 30
+    -- Pause the app for 30ms (~33 fps) as Haskell is slower to compute all lists, it only needs a delay of 10ms to reach the same graphic performances as the C++ implementation
+    delay 10
     
     -- Display the screen corresponding to the current state of the game
     if gameStateEq (getGameState gameData) MAIN
@@ -138,31 +138,35 @@ loop gameData appData = do
     if eventResultEq result Dataset.Quit
         then putStr ""
     else do
-        -- Update all game data!
-        let newGameData = ((updateGameState result gameData,
-                            updateGameActive result gameData,
-                            updateLevel result gameData,
-                            updateScore result gameData appData,
-                            updateTimestamp result gameData),
-                           (updatePlayerLife result gameData appData,
-                            updatePlayerPosition result gameData appData),
-                           (getAttackerIdList gameData,
-                            getAttackerTypeList gameData,
-                            updateAttackerPosition result gameData,
-                            updateAttackerAliveList result gameData appData,
-                            updateAttackerDirection result gameData),
-                           updateBulletList result gameData appData,
-                           (getBunkerIdList gameData,
-                            getBunkerTypeList gameData,
-                            getBunkerPositionList gameData,
-                            updateBunkerStateList result gameData),
-                           (updateSpaceshipActive gameData appData,
-                            updateSpaceshipPosition gameData appData,
-                            updateSpaceshipDirection gameData,
-                            updateSpaceshipWorth gameData))
+        -- This is used to avoid unnecessary computations while the game is not running and cuts CPU usage by 1.6 times
+        if not (eventResultEq result Play) && not (isGameActive gameData)
+            then loop gameData appData
+        else do
+            -- Update all game data!
+            let newGameData = ((updateGameState result gameData,
+                                updateGameActive result gameData,
+                                updateLevel result gameData,
+                                updateScore result gameData appData,
+                                updateTimestamp result gameData),
+                               (updatePlayerLife result gameData appData,
+                                updatePlayerPosition result gameData appData),
+                               (getAttackerIdList gameData,
+                                getAttackerTypeList gameData,
+                                updateAttackerPosition result gameData,
+                                updateAttackerAliveList result gameData appData,
+                                updateAttackerDirection result gameData),
+                               updateBulletList result gameData appData,
+                               (getBunkerIdList gameData,
+                                getBunkerTypeList gameData,
+                                getBunkerPositionList gameData,
+                                updateBunkerStateList result gameData),
+                               (updateSpaceshipActive gameData appData,
+                                updateSpaceshipPosition gameData appData,
+                                updateSpaceshipDirection gameData,
+                                updateSpaceshipWorth gameData))
         
-        -- Call the loop again with the updated game data
-        loop newGameData appData
+            -- Call the loop again with the updated game data
+            loop newGameData appData
 
 
 
