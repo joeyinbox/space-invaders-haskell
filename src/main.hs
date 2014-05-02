@@ -139,7 +139,7 @@ loop gameData appData = do
         then putStr ""
     else do
         -- This is used to avoid unnecessary computations while the game is not running and cuts CPU usage by 1.6 times
-        if not (eventResultEq result Play) && not (isGameActive gameData)
+        if not (eventResultEq result Play) && not (isGameActive gameData) && not (gameStateEq (getGameState gameData) INGAME)
             then loop gameData appData
         else do
             -- Update all game data!
